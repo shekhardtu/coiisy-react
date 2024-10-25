@@ -1,0 +1,16 @@
+[] User can initiate an anonymous chat or join the existing chat
+[] Enter their name or use the default userName as fullName
+[] After 3 hours of inactivity remove the user from the participants at frontend
+[] Create a link to share or copy the live session
+[] Add session validity of 15 day and remove after a certain period, if no activity
+[] Make it deployable with tsoa. Check how can we create the openAPI doc of ws urls
+[] Show collapse and expand button on the top right for chat window
+
+
+
+[] Create a landing page for anonymous chatting
+[] Sync chat of session in case of  I went offline
+[] Show if user is typing
+[] Show read and delivery receipt
+[] Add offline message queue of editor, chat and collaboration
+

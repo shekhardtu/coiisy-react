@@ -1,0 +1,30 @@
+
+[x] Save theme to localstorage and pick on load
+[x] Improve topbar with logo and move timer to top
+[x] Make all button smaller size
+[x] Bottom bar should asthetic status, connecting, connect again, disconnected. Should maintain the status
+[x] Improvised the chat feature
+[x] Setup the websocket with common room.
+[x] Animate chat window for better UX
+[x] Connect/disconnect the chat window
+[x] Resize handling of chat window
+
+[] Share link with Read and Write permission
+[] Share link with only Read Permission
+[] Share button with UUID
+[] Remove default formatting and add a button to format the content
+[] Add About and Privacy Policy at bottom
+[x] Save the maximum user details to db after connecting
+
+
+[] Next to timer, add a button to End the session. Just like end call.
+
+
+[x] Create rooms to add the subscriber(users[userId]),
+[x] User avatar should reflect the true view with connected users
+[] Add a logs window with all events log, session started, user joined, user left, session closed
+[] Record the session of all key stroke, with play and fast play options
+[] Use the same thing for editor,
+[] Make the resizable window
+[] Collapse and Expand feature
+[] Drag and drop window to left or right.
