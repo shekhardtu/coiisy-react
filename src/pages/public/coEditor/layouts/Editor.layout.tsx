@@ -19,9 +19,9 @@ const EditorLayoutContent: React.FC = () => {
   // Run initialization only once when component mounts
   useEffect(() => {
     if (!sessionData?.guestIdentifier) {
-      initializeSession();
+      initializeSession({ sessionId: sessionData?.sessionId });
     }
-  }, [sessionData?.guestIdentifier, initializeSession]);
+  }, [sessionData?.guestIdentifier, initializeSession, sessionData?.sessionId]);
 
   // Prevent render until we have session data
   if (!sessionData) {

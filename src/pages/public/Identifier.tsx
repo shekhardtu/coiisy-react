@@ -1,12 +1,13 @@
 import googleIcon from "@/assets/icons/google.svg";
 import { Button } from "@/components/ui/button";
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from "@/components/ui/card";
+import { local } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { sendOtp, verifyOtp } from "@shekhardtu/tsoa-client/services.gen";

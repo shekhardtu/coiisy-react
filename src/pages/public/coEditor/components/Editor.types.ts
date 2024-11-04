@@ -31,6 +31,7 @@ export interface CurrentUserInterface {
 
 export interface SessionDataInterface {
   sessionId?: string;
+  editorFocusMode?: boolean;
   editor?: {
     content?: string;
     language?: string;

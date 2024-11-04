@@ -45,47 +45,36 @@ interface EditorFooterProps {
 
   return (
     <footer className={`flex items-center bg-background border-t border-border text-xs justify-between h-8 ${className}`}>
-      <div className="flex items-center flex-1 justify-between h-full overflow-hidden">
-        <div className="flex items-center h-full">
-          <div className="h-full w-36 flex items-center justify-center ">
-            <div
-              className="flex items-center cursor-pointer"
-              onClick={handleConnectAgain}
-            >
-              <span className="px-2 inline-flex items-center gap-2">
-                {isWebSocketConnected == true ? (
-                  <BadgeCheck className="h-full text-green-600" size={18} />
-                ) : (
-                  <BadgeAlert className="h-full text-red-600" size={18} />
-                )}
-                {isWebSocketConnected ? "Connected" : "Disconnected"}
-              </span>
-            </div>
-            <div className="h-full w-px bg-border mx-2"></div>
+      <div className="flex items-center justify-between w-full px-4">
+        <div className="flex items-center gap-2">
+          <div
+            className="flex items-center cursor-pointer"
+            onClick={handleConnectAgain}
+          >
+            {isWebSocketConnected ? (
+              <BadgeCheck className="h-4 w-4 text-green-600" />
+            ) : (
+              <BadgeAlert className="h-4 w-4 text-red-600" />
+            )}
+            <span className="ml-1 hidden sm:inline">
+              {isWebSocketConnected ? "Connected" : "Disconnected"}
+            </span>
           </div>
         </div>
 
-        <div className="flex items-center justify-center h-full">
-          {/* <div className="text-muted-foreground px-2 p-2">
-            Ln {cursorPosition.line}, Col {cursorPosition.column}
-          </div> */}
-          {/* <div className="h-full w-px bg-border mx-2"></div> */}
-          {/* <SessionDuration /> */}
-
-          <div className="text-muted-foreground px-2 p-2 text-xs">
+        <div className="hidden sm:block text-muted-foreground truncate">
           {sessionId}
-          </div>
-
         </div>
-      </div>
-      <div className="flex items-center max-w-80 h-full justify-between overflow-hidden">
-        <SessionStartedTime sessionId={sessionId} />
-        <div
-          className="text-muted-foreground px-2 p-2 cursor-pointer flex items-center justify-center hover:text-red-600"
-          onClick={handleClearSession}
-        >
-          <Trash2 className="h-full text-red-600 mr-1" size={16} />
-          Clear Session
+
+        <div className="flex items-center gap-2">
+          <SessionStartedTime sessionId={sessionId} />
+          <button
+            className="text-red-600 flex items-center gap-1"
+            onClick={handleClearSession}
+          >
+            <Trash2 className="h-4 w-4" />
+            <span className="hidden sm:inline">Clear Session</span>
+          </button>
         </div>
       </div>
     </footer>

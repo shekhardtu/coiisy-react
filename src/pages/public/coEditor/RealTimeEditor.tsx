@@ -11,7 +11,8 @@ import EditorControl from "./components/EditorControl";
 
 import EditorSidebar from "./components/EditorSidebar";
 import LanguageSelector from "./components/LanguageSelector";
-import { useEditor } from './contexts/Editor.context';
+
+import useEditorContext from "./hooks/useEditor.contexthook";
 import { useEditorOutlet } from './hooks/useEditor.outlet';
 
 const DragHandle: React.FC<{ position: 'side' | 'bottom' }> = ({ position }) => {
@@ -36,13 +37,10 @@ const DragHandle: React.FC<{ position: 'side' | 'bottom' }> = ({ position }) => 
 };
 
 const RealTimeEditor: React.FC = () => {
-  const {
-    theme,
-    sessionData,
-    setSessionData
-  } = useEditor();
-  const { sessionId } = useEditorOutlet();
 
+  const { sessionId, theme } = useEditorOutlet();
+
+  const { sessionData , setSessionData} = useEditorContext();
   const [editorContent, setEditorContent] = useState<string>("");
   const [language, setLanguage] = useState<string>("javascript");
   const [isEditorEmpty, setIsEditorEmpty] = useState<boolean>(true);
@@ -392,3 +390,5 @@ const RealTimeEditor: React.FC = () => {
 };
 
 export default RealTimeEditor;
+
+

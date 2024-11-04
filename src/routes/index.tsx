@@ -11,7 +11,6 @@ import PublicLayout from '../layouts/PublicLayout';
 import Dashboard from '../pages/private/Dashboard';
 import User from '../pages/private/UserManagement';
 import ForgotPassword from '../pages/public/ForgotPassword';
-import Home from '../pages/public/Home';
 import Login from '../pages/public/Login';
 import Signup from '../pages/public/Signup';
 import ChatLayout from '../pages/public/chat/Chat.layout';
@@ -29,8 +28,7 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 
-const PublicRoute = ({ children }: { children: React.ReactNode }) => {
-
+const PublicRoute = ({ children }: { children: React.ReactNode; }) => {
   return isAuthenticated() ? <Navigate to="/dashboard" replace /> : children;
 };
 
@@ -45,34 +43,30 @@ const publicRoutes = [
       </PublicRoute>
     ),
     children: [
-      { index: true, element: <Home /> },
-      {  path: '/landing', element: <ChatLandingPage /> },
+      { index: true, element: <Navigate to="landing" replace /> },
+      { path: 'landing', element: <ChatLandingPage /> },
 
+      // Chat routes
       {
         path: 'chat',
         element: <ChatLayout />,
         children: [
-
           { path: ':sessionId', element: <ChatPage onSendMessage={() => {}} /> },
         ]
       },
+
+      // Clear routes
       {
-        path: 'clear', element: <ClearLayout />,
+        path: 'clear',
+        element: <ClearLayout />,
         children: [
           { path: ':sessionId', element: <ClearSession /> },
         ]
       },
 
-      // {
-      //   path: 'edit',
-      //   element: <EditorLayout />,
-      //   children: [
-      //     { index: true, element: <Navigate to={`/edit/${uuidv4()}`} replace /> },
-      //     { path: ':sessionId', element: <RealTimeEditor /> },
-      //   ]
-      // },
+      // Auth routes
       {
-        path: '/',
+        path: 'auth',
         element: <AuthenticationLayout />,
         children: [
           { path: 'identifier', element: <Identifier /> },
@@ -83,14 +77,11 @@ const publicRoutes = [
       },
     ]
   },
-
 ]
-
-
 
 const privateRoutes = [
   {
-    path: '/',
+    path: '/dashboard',
     element: (
       <PrivateRoute>
         <PrivateLayout />
@@ -98,15 +89,14 @@ const privateRoutes = [
     ),
     children: [
       { index: true, element: <Dashboard /> },
-      { path: 'dashboard', element: <Dashboard /> },
       { path: 'user', element: <User /> },
     ],
   },
 ]
 
 const router = createBrowserRouter([
-  ...privateRoutes,
   ...publicRoutes,
+  ...privateRoutes,
 ]);
 
 export function Router() {
