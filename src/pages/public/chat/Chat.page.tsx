@@ -1,35 +1,22 @@
-import { AuthMessageInterface, useWebSocket } from '@/contexts/WebSocketContext';
+import { useWebSocket } from '@/contexts/WebSocketContext';
 import { formatTimestamp, getCurrentTimeStamp, local } from "@/lib/utils";
+import { WS_MESSAGE_TYPES } from '@/lib/webSocket.config';
 import { Send } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useParams } from 'react-router-dom';
+import {
+  AuthMessageInterface,
+  ChatMessageInterface,
+  ServerChatMessageInterface,
+  ServerSessionMessagesInterface
+} from '../coEditor/components/Editor.types';
 import useEditorContext from '../coEditor/hooks/useEditor.contexthook';
 
-interface ChatPageProps {
+
+
+export interface ChatPageProps {
   onSendMessage: (message: string) => void;
 }
-
-interface BaseMessage {
-  type: string;
-  createdAt: string | Date;
-}
-
-interface JoinSessionMessage extends BaseMessage {
-  type: 'user_joined_session';
-  sessionId: string;
-  userId: string;
-  fullName: string;
-  createdAt: string | Date;
-}
-
-interface ChatMessageInterface extends BaseMessage {
-  type: 'chat';
-  sessionId: string;
-  userId: string;
-  fullName: string;
-  content: string;
-  createdAt: string | Date;
-}
-
 const messageAnimation = `
 @keyframes slideUpFade {
   from {
@@ -44,8 +31,8 @@ const messageAnimation = `
 `;
 
 const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
-  const { status, tryConnect, sendMessage, subscribe, setSessionId, sendAuthMessage } = useWebSocket();
-  const [messages, setMessages] = useState<ChatMessageInterface[]>([]);
+  const { status, tryConnect, sendMessage, subscribe, setSessionId, sendAuthMessage, userJoinedSession } = useWebSocket();
+  const [messages, setMessages] = useState<ServerChatMessageInterface[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const { sessionData } = useEditorContext();
   const { sessionId } = sessionData || {};
@@ -57,37 +44,77 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const clearTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const { sessionId: urlSessionId } = useParams();
+
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [viewportHeight, setViewportHeight] = useState(window.innerHeight);
 
   useEffect(() => {
-    setSessionId(sessionId || null);
-  }, [sessionId, setSessionId]);
+    setSessionId(sessionId || urlSessionId || null);
+  }, [sessionId, setSessionId, urlSessionId]);
 
   useEffect(() => {
-    if (currentUser) {
+    if (currentUser && sessionId) {
       const authMessage: AuthMessageInterface = {
-        type: 'auth',
+        type: WS_MESSAGE_TYPES.CLIENT_AUTH,
+        sessionId,
         userId: currentUser.userId,
         createdAt: getCurrentTimeStamp(),
       };
       sendAuthMessage(authMessage);
     }
-  }, [currentUser, sendAuthMessage]);
+  }, [currentUser, sendAuthMessage, sessionId]);
 
   useEffect(() => {
-    if (sessionId && status === 'connected') {
-      const joinSessionMessage: JoinSessionMessage = {
-        type: 'user_joined_session',
+    if (sessionId && status === 'connected' && currentUser?.userId) {
+      userJoinedSession({
+        type: WS_MESSAGE_TYPES.CLIENT_USER_JOINED_SESSION,
         sessionId,
         userId: currentUser.userId,
         fullName: currentUser.fullName,
-        createdAt: getCurrentTimeStamp()
-      };
-      sendMessage(joinSessionMessage);
+      })
     }
-  }, [sessionId, currentUser?.userId, currentUser?.fullName, sendMessage, status]);
+  }, [sessionId, userJoinedSession, status, currentUser?.userId, currentUser?.fullName]);
 
   useEffect(() => {
-    const unsubscribe = subscribe<ChatMessageInterface>('chat', (message) => {
+
+    const unsubscribeSessionReload = subscribe<ServerSessionMessagesInterface>(WS_MESSAGE_TYPES.SERVER_SESSION_MESSAGES, (data) => {
+      const messagesToAdd = (data.messages || []).filter(msg =>
+        msg && msg.createdAt && msg.userId && msg.content
+      );
+
+      setMessages(prevMessages => {
+        const newMessages = messagesToAdd.reduce((acc, message) => {
+          const isDuplicate = prevMessages.some(
+            msg => msg.createdAt === message.createdAt &&
+              msg.userId === message.userId &&
+              msg.content === message.content
+          );
+          if (!isDuplicate) {
+            acc.push(message as ServerChatMessageInterface);
+          }
+          return acc;
+        }, [...prevMessages]);
+
+        const sessionData = local("json", "key").get(`sessionIdentifier-${sessionId}`) || {};
+        if (sessionData.guestIdentifier) {
+          local("json", "key").set(`sessionIdentifier-${sessionId}`, {
+            ...sessionData,
+            updatedAt: getCurrentTimeStamp(),
+            guestIdentifier: {
+              ...sessionData.guestIdentifier,
+              messages: newMessages
+            }
+          });
+        }
+
+        return newMessages;
+      });
+    });
+
+
+
+    const unsubscribe = subscribe<ServerChatMessageInterface>(WS_MESSAGE_TYPES.SERVER_CHAT, (message) => {
       setMessages(prevMessages => {
         const isDuplicate = prevMessages.some(
           msg => msg.createdAt === message.createdAt &&
@@ -116,6 +143,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
 
     return () => {
       unsubscribe();
+      unsubscribeSessionReload();
     };
   }, [status, subscribe, sessionId]);
 
@@ -169,22 +197,48 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
     };
   }, []);
 
+  useEffect(() => {
+    const handleResize = () => {
+      const newHeight = window.innerHeight;
+      setViewportHeight(newHeight);
+      // If height decreased significantly, keyboard is likely visible
+      setKeyboardVisible(newHeight < window.outerHeight * 0.75);
+    };
+
+    window.addEventListener('resize', handleResize);
+    // For iOS Safari, we need these additional events
+    window.visualViewport?.addEventListener('resize', handleResize);
+    window.visualViewport?.addEventListener('scroll', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.visualViewport?.removeEventListener('resize', handleResize);
+      window.visualViewport?.removeEventListener('scroll', handleResize);
+    };
+  }, []);
+
   const handleSendMessage = () => {
     if (!inputRef.current || !inputRef.current.value.trim() || status !== 'connected') return;
 
+    const messageContent = inputRef.current.value.trim();
     const messageData: ChatMessageInterface = {
-      type: 'chat',
+      type: WS_MESSAGE_TYPES.CLIENT_CHAT,
       sessionId: sessionId || '',
       userId: currentUser.userId,
       fullName: currentUser.fullName || '',
-      content: inputRef.current.value.trim(),
+      content: messageContent,
       createdAt: getCurrentTimeStamp(),
     };
 
     sendMessage(messageData);
     inputRef.current.value = "";
     scrollToBottom(true);
-    onSendMessage(inputRef.current.value.trim());
+    onSendMessage(messageContent);
+
+    // Keep focus on input after sending
+    if (keyboardVisible) {
+      inputRef.current.focus();
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -201,8 +255,17 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
   }, [sessionData]);
 
   return (
-    <div className={`flex flex-col fixed inset-x-0 bottom-8 bg-background ${isFocusMode ? 'top-8' : 'top-14'
-      }`}>
+    <div
+      className={`flex flex-col fixed inset-x-0 bg-background ${
+        keyboardVisible
+          ? 'bottom-0' // Stick to bottom when keyboard is visible
+          : 'bottom-8' // Normal position when keyboard is hidden
+      } ${isFocusMode ? 'top-8' : 'top-14'}`}
+      style={{
+        // Use dynamic height when keyboard is visible
+        height: keyboardVisible ? `${viewportHeight}px` : 'auto',
+      }}
+    >
       <div className="flex-none bg-background z-30 h-14 sm:h-16">
         <div className="px-3 sm:px-4 py-2 border-b border-border flex items-center justify-between">
           <span className="text-sm font-medium">Chat</span>
@@ -285,24 +348,49 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
         </div>
       )}
 
-      <div className="flex-none bg-background border-t border-border p-2 sm:p-4">
-        <div className="flex items-center max-w-full">
-          <input
-            type="text"
-            ref={inputRef}
-            onKeyDown={handleKeyPress}
-            placeholder={status === 'connected' ? "Type a message..." : "Connecting to chat..."}
-            disabled={status !== 'connected'}
-            className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 text-sm bg-input text-foreground rounded-full focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
-          />
+      <div className={`flex-none bg-background border-t border-border p-3 sm:p-4 ${
+        keyboardVisible ? 'sticky bottom-0' : ''
+      }`}>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSendMessage();
+          }}
+          className="flex items-center gap-2 max-w-full"
+        >
+          <div className="relative flex-1">
+            <input
+              type="text"
+              ref={inputRef}
+              onKeyDown={handleKeyPress}
+              placeholder={status === 'connected' ? "Type a message..." : "Connecting to chat..."}
+              disabled={status !== 'connected'}
+              aria-label="Chat message"
+              className="w-full px-4 py-2.5 text-base bg-input text-foreground rounded-full
+                focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50
+                placeholder:text-muted-foreground/70"
+            />
+            {status === 'connected' && (
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-muted-foreground/50
+                hidden [@media(hover:hover)]:inline-block" // Only show on devices with hover capability
+              >
+                Press Enter ↵
+              </span>
+            )}
+          </div>
           <button
-            onClick={handleSendMessage}
+            type="submit"
             disabled={status !== 'connected'}
-            className="ml-2 bg-primary text-primary-foreground p-1.5 sm:p-2 rounded-full hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+            aria-label="Send message"
+            className="min-w-[44px] min-h-[44px] p-3 bg-primary text-primary-foreground rounded-full
+              hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring
+              disabled:opacity-50 disabled:cursor-not-allowed
+              transition-all duration-200 hover:scale-105 active:scale-95
+              flex items-center justify-center touch-manipulation"
           >
-            <Send size={18} className="sm:w-5 sm:h-5" />
+            <Send size={20} className="sm:w-5 sm:h-5" />
           </button>
-        </div>
+        </form>
       </div>
     </div>
   );

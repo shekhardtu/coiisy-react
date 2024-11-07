@@ -38,14 +38,32 @@ const UserAvatars: React.FC<UserAvatarsProps> = ({ users, size = 'default' }) =>
     }
   };
 
+  const formatDateToISO = (date: Date | string | number) => {
+    const dateObj = date instanceof Date ? date : new Date(date);
+    return new Intl.DateTimeFormat(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true,
+      timeZoneName: 'short'
+    }).format(dateObj)
+  }
+
+
   const sizeClass = avatarSizeClasses[size];
 
   return (
     <div className={cn("flex items-center", sizeClass.spacing)}>
-      {users.map((user) => (
-        <TooltipProvider key={user.userId}>
-          <Tooltip delayDuration={100}>
-            <TooltipTrigger asChild>
+      {users.map((user) => {
+        console.log(user.isShow)
+        if (!user.isShow) return null;
+        return (
+          <TooltipProvider key={user.userId}>
+            <Tooltip delayDuration={100}>
+              <TooltipTrigger asChild>
               <div
                 className={cn(
                   "relative flex items-center justify-center rounded-full transition-all duration-200 hover:scale-110 cursor-pointer ring-2 ring-background",
@@ -95,18 +113,19 @@ const UserAvatars: React.FC<UserAvatarsProps> = ({ users, size = 'default' }) =>
                     {user.isOnline ? 'Active' : 'Inactive'}
                   </span>
                 </div>
-                <div className="text-sm text-muted-foreground">
+                <div className="text-sm text-muted-foreground" title={user.isOnline ? formatDateToISO(  user.connectedAt) : formatDateToISO(user.lastSeenAt)}>
                   {user.isOnline ? (
                     <p>Connected {formatDate(user.connectedAt)}</p>
                   ) : (
-                    <p>Last seen {formatDate(user.lastActiveAt)}</p>
+                    <p>Last seen {formatDate(user.lastSeenAt)}</p>
                   )}
                 </div>
               </div>
             </TooltipContent>
           </Tooltip>
-        </TooltipProvider>
-      ))}
+          </TooltipProvider>
+        )
+      })}
     </div>
   );
 };

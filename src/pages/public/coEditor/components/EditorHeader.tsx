@@ -7,15 +7,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 import {
-  UserDisconnectedMessage,
-  UserJoinedSessionMessage,
-  useWebSocket,
+  useWebSocket
 } from "@/contexts/WebSocketContext";
-import { cn, local } from "@/lib/utils";
+import { cn, getUnitsToMinutes, local } from "@/lib/utils";
+import { WS_MESSAGE_TYPES } from "@/lib/webSocket.config";
 import { ChevronDown, ChevronUp, Share2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { OnlineUserInterface } from "./Editor.types";
+import { OnlineUserInterface, ServerUserDisconnectedInterface, ServerUserJoinedSessionInterface } from "./Editor.types";
 import ThemeSelector from "./ThemeSelector";
 import UserAvatars from "./UsersAvatar";
 
@@ -31,6 +30,7 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
   const [users, setUsers] = useState<OnlineUserInterface[]>([])
   const { subscribe, status } = useWebSocket()
   const url = window.location.href
+  const minutes = 30;
   const [isFocusMode, setIsFocusMode] = useState<boolean>(() => {
 
     const saved = local('json', 'key').get('editorFocusMode');
@@ -52,10 +52,9 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
   }, [status])
 
   useEffect(() => {
-    console.count("subscribe")
     const unsubscribeUserJoined = subscribe(
-      "user_joined_session",
-      (data: UserJoinedSessionMessage) => {
+      WS_MESSAGE_TYPES.SERVER_USER_JOINED_SESSION,
+      (data: ServerUserJoinedSessionInterface) => {
         const users: OnlineUserInterface[] = data.participants
           .map((user) => {
             return {
@@ -63,11 +62,13 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
               fullName: user.fullName,
               isOnline: user.isOnline,
               userId: user.userId,
+              isShow: user.isOnline || (new Date().getTime() - new Date(user.lastSeenAt).getTime() <= getUnitsToMinutes(minutes)),
               connectedAt: user.connectedAt,
-              lastActiveAt: user.lastActiveAt,
+              lastSeenAt: user.lastSeenAt,
             }
           })
           .sort((a) => (a.isOnline ? -1 : 1))
+
 
         setUsers((prevUsers) => {
           const filteredUsers = prevUsers.filter(
@@ -78,15 +79,17 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
       }
     )
 
+
+
     const unsubscribeUserLeft = subscribe(
-      "user_disconnected",
-      (data: UserDisconnectedMessage) => {
+      WS_MESSAGE_TYPES.SERVER_USER_DISCONNECTED,
+      (data: ServerUserDisconnectedInterface) => {
         setUsers((prevUsers) =>
           prevUsers.map((u) =>
             u.userId == data.userId
               ? {
                   ...u,
-                  lastActive: new Date(),
+                  lastSeenAt: data.lastSeenAt,
                   isOnline: false,
                 }
               : u
@@ -98,6 +101,7 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
     return () => {
       unsubscribeUserJoined()
       unsubscribeUserLeft()
+
     }
   }, [])
 

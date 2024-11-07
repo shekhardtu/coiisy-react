@@ -54,3 +54,28 @@ export const getWebSocketURL = () => {
   return url;
 };
 
+export const WS_CLIENT_MESSAGE_TYPES = {
+  CLIENT_AUTH: 'client_auth' as const,
+  CLIENT_USER_JOINED_SESSION: 'client_user_joined_session' as const,
+  CLIENT_USER_DISCONNECTED: 'client_user_disconnected' as const,
+  CLIENT_PING: 'client_ping' as const,
+  CLIENT_CHAT: 'client_chat' as const,
+
+
+}
+
+
+export const WS_SERVER_MESSAGE_TYPES = {
+  SERVER_USER_JOINED_SESSION: 'server_user_joined_session' as const,
+  SERVER_AUTH_SUCCESS: 'server_auth_success' as const,
+  SERVER_CHAT: 'server_chat' as const,
+  SERVER_PONG: 'server_pong' as const,
+  SERVER_USER_DISCONNECTED: 'server_user_disconnected' as const,
+  SERVER_SESSION_MESSAGES: 'server_session_messages' as const,
+}
+
+
+export const WS_MESSAGE_TYPES = {
+  ...WS_CLIENT_MESSAGE_TYPES,
+  ...WS_SERVER_MESSAGE_TYPES,
+} as const;

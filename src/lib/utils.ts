@@ -201,4 +201,9 @@ export const getCurrentUser = (sessionId: string | undefined) => {
     local("json", "key").get(`sessionIdentifier-${sessionId}`) || {}
   const { guestIdentifier } = sessionData
   return guestIdentifier
+};
+
+
+export const getUnitsToMinutes = (units: number) => {
+  return units * 60 * 1000;
 }

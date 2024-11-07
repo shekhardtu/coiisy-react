@@ -14,3 +14,12 @@
 [] Show read and delivery receipt
 [] Add offline message queue of editor, chat and collaboration
 
+
+[] Accessible UI, bottom widget can be hidden on mobile 
+[] Input box should be stick to keyboard 
+[] Increase the tapping area of Send button 
+[] Improve the Perceived performance 
+[] Make text input to multibutton
+[] Maintain the lost chat to both users. Offline chat should get recovered when any of the user is offline  
+[] Sent, Delivered and Read Receipt on chat leafs 
+[]

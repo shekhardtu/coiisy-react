@@ -1,5 +1,11 @@
-import { wsConfig } from '@/lib/webSocket.config';
-import { CurrentUserInterface, OnlineUserInterface, SessionDataInterface } from '@/pages/public/coEditor/components/Editor.types';
+import { WS_MESSAGE_TYPES, wsConfig } from '@/lib/webSocket.config';
+import {
+  AuthMessageInterface,
+  ClientMessage,
+  ClientUserJoinedSessionInterface,
+  CurrentUserInterface,
+  ServerMessage
+} from '@/pages/public/coEditor/components/Editor.types';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 
@@ -7,65 +13,9 @@ import { getCurrentTimeStamp, local } from '@/lib/utils';
 import { getWebSocketURL } from '@/lib/webSocket.config';
 
 
-// Base message type that all messages must extend
-interface BaseMessage {
-  type: string;
-  createdAt: string | Date;
-}
-
-// Specific message types
-interface ChatMessage extends BaseMessage {
-  type: 'chat';
-  sessionId: string;
-  userId: string;
-  fullName: string;
-  content: string;
-}
-
-interface PingMessage extends BaseMessage {
-  type: 'ping';
-}
-
-interface PongMessage extends BaseMessage {
-  type: 'pong';
-}
-
-interface JoinSessionMessage extends BaseMessage {
-  type: 'user_joined_session';
-  sessionId: string;
-}
-
-interface SystemMessage extends BaseMessage {
-  type: 'system';
-  message: string;
-  level?: 'info' | 'warning' | 'error';
-}
-
-export interface AuthMessageInterface extends BaseMessage {
-  type: 'auth';
-  userId: string;
-}
-
-export interface UserJoinedSessionMessage extends BaseMessage {
-  type: 'user_joined_session';
-  participants: OnlineUserInterface[];
-}
-
-export interface UserJoinedMessage extends BaseMessage {
-  userId?: string;
-  fullName?: string;
-  type: 'user_joined_session';
-  user: CurrentUserInterface;
-}
-
-export interface UserDisconnectedMessage extends BaseMessage {
-  userId?: string;
-  type: 'user_disconnected';
-}
-
+//
 // Union type of all possible message types
-type WebSocketMessage = ChatMessage | PingMessage | PongMessage | SystemMessage | JoinSessionMessage | AuthMessageInterface | UserJoinedMessage | UserDisconnectedMessage | UserJoinedSessionMessage;
-
+type WebSocketMessage = ClientMessage | ServerMessage;
 // Type guard to check message types
 const isValidMessageType = (data: unknown): data is WebSocketMessage => {
 
@@ -91,7 +41,7 @@ interface WebSocketContextType {
     type: T['type'],
     callback: MessageHandler<T>
   ) => () => void;
-  user_joined_session: (sessionData: SessionDataInterface) => void;
+  userJoinedSession: (message: ClientUserJoinedSessionInterface) => void;
   sessionId: string | null;
   setSessionId: (sessionId: string | null) => void;
   currentUser: CurrentUserInterface | null;
@@ -127,11 +77,21 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 
 
 
+  const getCurrentUser = useCallback((sessionId: string) => {
+    const sessionData = local("json", "key").get(`sessionIdentifier-${sessionId}`);
+    return sessionData?.guestIdentifier;
+  }, []);
+
   useEffect(() => {
     if (sessionId) {
-      const { guestIdentifier } = local("json", "key").get(`sessionIdentifier-${sessionId}`) || {};
-      setCurrentUser(guestIdentifier);
-
+      const currentUser = getCurrentUser(sessionId);
+      if (currentUser) {
+        setCurrentUser(currentUser);
+        // If we have both sessionId and currentUser, try connecting
+        if (!wsRef.current && status === 'disconnected') {
+          tryConnect();
+        }
+      }
     }
   }, [sessionId]);
 
@@ -178,26 +138,32 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     }
   }, []);
 
-  const setupPingInterval = useCallback((ws: WebSocket) => {
+  const setupPingInterval = useCallback((ws: WebSocket , currentUser: CurrentUserInterface, sessionId: string) => {
+    clearPingInterval(); // Clear any existing interval firs  t
+
+    if (!currentUser || !sessionId) {
+      console.warn('Missing user or sessio  n data for ping setup');
+      return;
+    }
 
     pingIntervalRef.current = setInterval(() => {
-
       if (ws.readyState === WebSocket.OPEN) {
-
-        ws.send(JSON.stringify({
-          userId: currentUser?.userId,
-          type: 'ping',
-          createdAt: new Date().toISOString()
-        }));
+        const pingMessage = {
+          userId: currentUser.userId,
+          sessionId: sessionId || currentUser.sessionId,
+          type: WS_MESSAGE_TYPES.CLIENT_PING,
+          createdAt: getCurrentTimeStamp()
+        };
+        ws.send(JSON.stringify(pingMessage));
       }
     }, wsConfig.pingInterval);
-  }, [currentUser]);
+  }, []);
 
   const handleIncomingMessage = (event: MessageEvent) => {
     try {
 
       const data = JSON.parse(event.data);
-      console.log(data['type']);
+      // console.log(data);
       if (!isValidMessageType(data)) {
         console.error('Invalid message format:', data);
 
@@ -231,13 +197,27 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   };
 
   const tryConnect = useCallback(() => {
-    if (isConnectingRef.current || status === 'connected') {
+    if (isConnectingRef.current || status === 'connected' ) {
       log('Connection already in progress or connected');
       return;
     }
 
+    if (!sessionId) {
+      console.warn('No session ID found');
+      return;
+    }
+
+    const currentUser = getCurrentUser(sessionId);
+    setCurrentUser(currentUser);
+
+    if (!currentUser) {
+      console.warn('No current user found');
+      return;
+    }
+
+
     isConnectingRef.current = true;
-    setServerAvailable(true);  // Reset server status at each attempt
+    setServerAvailable(true);
     setStatus('connecting');
 
     const connectionTimeout = setTimeout(() => {
@@ -268,16 +248,23 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
         setStatus('connected');
         setServerAvailable(true);
         isConnectingRef.current = false;
-        setupPingInterval(ws);
-        if (currentUser) {
+        wsRef.current = ws;
+
+        // Only setup ping and send auth if we have necessary data
+
+        if (currentUser?.userId && sessionId) {
+          setupPingInterval(ws, currentUser, sessionId);
           sendAuthMessage({
-            type: 'auth',
-            userId: currentUser.userId || '',
+            type: WS_MESSAGE_TYPES.CLIENT_AUTH,
+            sessionId,
+            userId: currentUser.userId,
             createdAt: getCurrentTimeStamp(),
           });
+        } else {
+          console.warn('Missing user or session data on connection');
         }
+
         resetReconnectCount();
-        wsRef.current = ws;
       };
 
       ws.onmessage = handleIncomingMessage;
@@ -315,7 +302,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
       setStatus('disconnected');
       isConnectingRef.current = false;
     }
-  }, [status, clearAllTimeouts, url, setupPingInterval, currentUser, sendAuthMessage, serverAvailable]);
+  }, [status, clearAllTimeouts, url, setupPingInterval,  sessionId, sendAuthMessage, serverAvailable]);
 
   const disconnect = useCallback(() => {
     log('Disconnecting...');
@@ -324,11 +311,28 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     stateRef.current.reconnectCount = 0;
     isConnectingRef.current = false;
 
-    if (wsRef.current) {
-      wsRef.current.close();
-      wsRef.current = null;
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      const disconnectMessage = {
+        type: 'client_user_disconnected',
+        sessionId: sessionId,
+        userId: currentUser?.userId,
+      };
+
+      wsRef.current.send(JSON.stringify(disconnectMessage));
+
+      setTimeout(() => {
+        try {
+          // Use a simple close code without a reason string
+          wsRef.current?.close(4000); // Using 4000 as a custom code for normal closure
+          wsRef.current = null;
+          setStatus('disconnected');
+        } catch (error) {
+          console.error('Error closing WebSocket:', error);
+        }
+      }, 100);
+
     }
-  }, [clearAllTimeouts]);
+  }, [clearAllTimeouts, currentUser]);
 
   // Single effect for initial connection
   useEffect(() => {
@@ -355,13 +359,15 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     }
   }, []);
 
-  const user_joined_session = useCallback((sessionData: SessionDataInterface) => {
-    if (status === 'connected') {
+  const userJoinedSession = useCallback((message: ClientUserJoinedSessionInterface) => {
+    if (status === 'connected' && message.userId) {
       sendMessage({
-        ...sessionData,
-        sessionId: sessionData.sessionId || '',
-        type: 'user_joined_session',
+        ...message,
+        sessionId: message.sessionId,
+        type: 'client_user_joined_session',
+        userId: message.userId,
         createdAt: getCurrentTimeStamp(),
+        fullName: message.fullName,
       });
     }
   }, [sendMessage, status]);
@@ -373,7 +379,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     tryConnect,
     disconnect,
     subscribe,
-    user_joined_session,
+    userJoinedSession,
     currentUser,
     setCurrentUser,
     sessionId,
@@ -385,7 +391,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     sendMessage,
     tryConnect,
     disconnect,
-    user_joined_session,
+    userJoinedSession,
     currentUser,
     setCurrentUser,
     sessionId,
