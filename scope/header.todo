@@ -1,8 +1,8 @@
 [] Show the user name to right
-[] Add a button to share the url
-[] When click on share, copy the link to clipboard
+[x] Add a button to share the url
+[x] When click on share, copy the link to clipboard
 [] Addition of user or deactivation, make it little animated
-[] On click trigger to see the user info, with tactile info
+[x] On click trigger to see the user info, with tactile info
 [] Add the boarder color with profile color
 [] Improve the logo with better color, theme or use the typography logo
 
