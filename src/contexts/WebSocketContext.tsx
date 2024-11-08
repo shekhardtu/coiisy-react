@@ -83,6 +83,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   }, []);
 
   useEffect(() => {
+
     if (sessionId) {
       const currentUser = getCurrentUser(sessionId);
       if (currentUser) {

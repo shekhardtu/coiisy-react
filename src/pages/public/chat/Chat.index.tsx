@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import React, { useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-
+import { v4 as uuidv4 } from 'uuid';
 const features = [
   {
     icon: <MessageSquare className="w-8 h-8" />,
@@ -400,7 +400,8 @@ const ChatLandingPage: React.FC = () => {
   );
 
   const handleGetStarted = () => {
-    navigate('/chat');
+    const sessionId = uuidv4();
+    navigate(`/${sessionId}`);
   };
 
 

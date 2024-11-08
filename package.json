@@ -1,13 +1,15 @@
 {
-  "name": "hee.la",
+  "name": "coiisy",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "VITE_ENV=development vite",
+    "vercel-dev": "vite --port 3001",
     "build": "VITE_ENV=production tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "serve": "VITE_WEBSOCKET_URL=ws://192.168.1.5:4000/ws serve -s dist"
   },
   "dependencies": {
     "@hey-api/client-fetch": "^0.3.4",

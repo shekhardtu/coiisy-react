@@ -40,7 +40,7 @@ const RealTimeEditor: React.FC = () => {
 
   const { sessionId, theme } = useEditorOutlet();
 
-  const { sessionData , setSessionData} = useEditorContext();
+  const { sessionData , setSessionData } = useEditorContext();
   const [editorContent, setEditorContent] = useState<string>("");
   const [language, setLanguage] = useState<string>("javascript");
   const [isEditorEmpty, setIsEditorEmpty] = useState<boolean>(true);
@@ -59,8 +59,12 @@ const RealTimeEditor: React.FC = () => {
     console.log('Session data:', sessionData);
   }, [theme, sessionData]);
 
+
+
   const getSessionData = useCallback((): SessionDataInterface => {
+
     return local("json", "key").get(`sessionIdentifier-${sessionId}`) || {};
+
   }, [sessionId]);
 
 

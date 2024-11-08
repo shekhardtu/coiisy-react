@@ -149,6 +149,7 @@ export type ServerMessage =
   | ServerUserDisconnectedInterface
   | ServerPongInterface
   | ServerSessionMessagesInterface;
+
 export type ClientMessage =
   | ChatMessageInterface
   | PingMessageInterface

@@ -1,25 +1,21 @@
-[] User can initiate an anonymous chat or join the existing chat
-[] Enter their name or use the default userName as fullName
-[] After 3 hours of inactivity remove the user from the participants at frontend
-[] Create a link to share or copy the live session
-[] Add session validity of 15 day and remove after a certain period, if no activity
-[] Make it deployable with tsoa. Check how can we create the openAPI doc of ws urls
-[] Show collapse and expand button on the top right for chat window
 
-
-
-[] Create a landing page for anonymous chatting
-[] Sync chat of session in case of  I went offline
+[x] After 3 hours of inactivity remove the user from the participants at frontend
+[x] Create a link to share or copy the live session
+[x] Make it deployable with tsoa. Check how can we create the openAPI doc of ws urls
+[x] Show collapse and expand button on the top right for chat window
+[x] Input box should be stick to keyboard
+[x] Increase the tapping area of Send button
+[x] Improve the Perceived performance
+[x] Make text input to multibutton
+[x] Maintain the lost chat to both users. Offline chat should get recovered when any of the user is offline
+[x] Create a landing page for anonymous chatting
+[x] Sync chat of session in case of  I went offline
 [] Show if user is typing
 [] Show read and delivery receipt
 [] Add offline message queue of editor, chat and collaboration
+[] User can initiate an anonymous chat or join the existing chat
+[] Enter their name or use the default userName as fullName
+[] Add session validity of 15 day and remove after a certain period, if no activity
 
-
-[] Accessible UI, bottom widget can be hidden on mobile 
-[] Input box should be stick to keyboard 
-[] Increase the tapping area of Send button 
-[] Improve the Perceived performance 
-[] Make text input to multibutton
-[] Maintain the lost chat to both users. Offline chat should get recovered when any of the user is offline  
-[] Sent, Delivered and Read Receipt on chat leafs 
-[]
+[-] Accessible UI, bottom widget can be hidden on mobile
+[-] Sent, Delivered and Read Receipt on chat leafs

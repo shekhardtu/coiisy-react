@@ -2,6 +2,8 @@ import { getCurrentTimeStamp, local } from '@/lib/utils';
 import React, { createContext, useCallback, useEffect, useMemo, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { CurrentUserInterface, SessionDataInterface } from '../components/Editor.types';
+import { JoinSessionModal } from '../components/JoinSessionModal';
+
 interface EditorContextType {
   theme: "light" | "dark";
   setTheme: (theme: "light" | "dark") => void;
@@ -15,7 +17,12 @@ interface EditorContextType {
   handleThemeChange: (newTheme: "light" | "dark") => void;
   setSessionId: (sessionId: string | undefined) => void;
   sessionId: string | undefined;
-
+  isJoinModalOpen: boolean;
+  sessionStats: {
+    onlineCount: number;
+    totalCount: number;
+  };
+  setSessionStats: (sessionStats: { onlineCount: number; totalCount: number }) => void;
 }
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
@@ -36,20 +43,26 @@ export const EditorProvider: React.FC<{
   const [isWebSocketConnected, setIsWebSocketConnected] = useState(false);
   const [sessionId, setSessionId] = useState<string | undefined>(undefined);
   const [sessionData, setSessionData] = useState<SessionDataInterface | null>(null);
+  const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
+  const [sessionStats, setSessionStats] = useState({
+    onlineCount: 0,
+    totalCount: 0
+  });
 
   // Initialize session first
   useEffect(() => {
-    const currentSessionId = local("json", STORAGE_KEY).get('currentSessionId');
-    if (currentSessionId) {
-      const savedSession = local("json", STORAGE_KEY).get(`sessionIdentifier-${currentSessionId}`);
+    if (sessionId) {
+      const savedSession = local("json", STORAGE_KEY).get(`sessionIdentifier-${sessionId}`);
       if (savedSession) {
-        setSessionId(currentSessionId);
+        setSessionId(sessionId);
         setSessionData(savedSession);
       }
     }
-  }, []);
+  }, [sessionId]);
 
-  const initializeSession = useCallback(async ({ sessionId }: { sessionId: string | undefined }) => {
+  const initializeSession = useCallback(async ({ sessionId }: { sessionId: string | undefined; }) => {
+
+    setSessionId(sessionId);
     if (!sessionId) return;
 
     const savedSessionData = local("json", STORAGE_KEY).get(`sessionIdentifier-${sessionId}`);
@@ -60,8 +73,12 @@ export const EditorProvider: React.FC<{
       return;
     }
 
-    const fullName = prompt("Please enter your full name");
-    if (!fullName?.trim()) return;
+    setIsJoinModalOpen(true);
+  }, []);
+
+  const handleJoinSession = useCallback((fullName: string) => {
+
+    if (!sessionId || !fullName.trim()) return;
 
     const guestIdentifier: CurrentUserInterface = {
       fullName: fullName.trim(),
@@ -76,14 +93,18 @@ export const EditorProvider: React.FC<{
     const newSessionData = {
       guestIdentifier,
       sessionId,
-      createdAt: Math.floor(Date.now() / 1000)
+      createdAt: getCurrentTimeStamp()
     };
 
     setSessionData(newSessionData);
     setSessionId(sessionId);
     local("json", STORAGE_KEY).set(`sessionIdentifier-${sessionId}`, newSessionData);
-    local("json", STORAGE_KEY).set('currentSessionId', sessionId);
-  }, []);
+
+    setIsJoinModalOpen(false);
+
+  }, [sessionId]);
+
+
 
   // Persist session data changes
   useEffect(() => {
@@ -123,6 +144,9 @@ export const EditorProvider: React.FC<{
     setSessionData,
     initializeSession,
     handleThemeChange,
+    isJoinModalOpen,
+    sessionStats,
+    setSessionStats
   }), [
     theme,
     cursorPosition,
@@ -130,7 +154,10 @@ export const EditorProvider: React.FC<{
     sessionData,
     sessionId,
     handleThemeChange,
-    initializeSession
+    initializeSession,
+    isJoinModalOpen,
+    sessionStats,
+    setSessionStats
   ]);
 
 
@@ -138,6 +165,14 @@ export const EditorProvider: React.FC<{
   return (
     <EditorContext.Provider value={contextValue}>
       {children}
+      <JoinSessionModal
+        isOpen={isJoinModalOpen}
+        onJoin={handleJoinSession}
+        sessionName={sessionId}
+        sessionUrl={window.location.href}
+        onlineCount={sessionStats.onlineCount}
+        totalCount={sessionStats.totalCount}
+      />
     </EditorContext.Provider>
   );
 };

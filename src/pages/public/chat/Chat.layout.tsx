@@ -28,9 +28,8 @@ const EditorLayoutContent: React.FC<{ existingSessionId: string | undefined }> =
   );
 
   useEffect(() => {
-
     if (!existingSessionId) {
-      navigate(`/chat/${sessionId}`);
+      navigate(`/${sessionId}`);
       setSessionId(sessionId);
       setSessionData({
         sessionId: sessionId,
