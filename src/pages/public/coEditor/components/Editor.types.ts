@@ -1,7 +1,7 @@
 import { WS_MESSAGE_TYPES } from "@/lib/webSocket.config";
 
 export interface OnlineUserInterface {
-  userId?: string;
+  userId: string;
   initials: string;
   fullName: string;
   isOnline: boolean;
