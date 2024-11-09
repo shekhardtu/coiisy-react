@@ -54,6 +54,8 @@ export interface MessageInterface {
   content: string;
   createdAt?: number | string | Date;
   updatedAt?: number | string | Date;
+  messageId?: string;
+  state?: 'sending' | 'sent' | 'delivered' | 'failed' | 'deleted' | 'seen' | undefined;
 }
 
 export interface BaseMessage {
@@ -71,18 +73,28 @@ export interface JoinSessionMessageInterface extends BaseMessage {
 }
 
 export interface ChatMessageInterface extends BaseMessage {
-  type: typeof WS_MESSAGE_TYPES.CLIENT_CHAT;
+  type: typeof WS_MESSAGE_TYPES.CLIENT_CHAT | typeof WS_MESSAGE_TYPES.SERVER_CHAT;
   sessionId: string;
   userId: string;
   fullName: string;
   content: string;
   createdAt: string | Date;
+  messageId: string;
+  state?: 'sending' | 'sent' | 'delivered' | 'failed' | 'deleted' | 'seen' | undefined;
 }
 
-export interface ServerChatMessageInterface
-  extends Omit<ChatMessageInterface, "type"> {
+
+export interface ServerChatMessageInterface {
   type: typeof WS_MESSAGE_TYPES.SERVER_CHAT;
+  sessionId: string;
+  userId: string;
+  fullName: string;
+  content: string;
+  createdAt: string | Date;
+  state?: 'sending' | 'sent' | 'delivered' | 'failed' | 'deleted' | 'seen' | undefined;
+  messageId: string;
 }
+
 
 export interface PingMessageInterface extends BaseMessage {
   type: typeof WS_MESSAGE_TYPES.CLIENT_PING;
@@ -141,6 +153,7 @@ export interface ServerPongInterface extends BaseMessage {
 export interface ServerSessionMessagesInterface extends BaseMessage {
   type: typeof WS_MESSAGE_TYPES.SERVER_SESSION_MESSAGES;
   messages: MessageInterface[];
+
 }
 
 export type ServerMessage =

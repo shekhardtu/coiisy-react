@@ -3,6 +3,7 @@ import { getCurrentTimeStamp, local } from "@/lib/utils";
 import { WS_MESSAGE_TYPES } from '@/lib/webSocket.config';
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from 'react-router-dom';
+import { v4 as uuidv4 } from 'uuid';
 import { AuthMessageInterface, ChatMessageInterface, ServerChatMessageInterface, ServerSessionMessagesInterface } from '../coEditor/components/Editor.types';
 import useEditorContext from '../coEditor/hooks/useEditor.contexthook';
 import { CurrentUserInterface } from './components/chat.types';
@@ -12,25 +13,24 @@ import ChatMessages from './components/ChatMessages';
 
 
 
-
 export interface ChatPageProps {
   onSendMessage: (message: string) => void;
 }
 
 const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
-  const [messages, setMessages] = useState<ServerChatMessageInterface[]>([]);
+  const [messages, setMessages] = useState<ChatMessageInterface[]>([]);
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
-  const { sessionId: urlSessionId } = useParams();
-  const { sessionData, isJoinModalOpen } = useEditorContext();
+  const { sessionId } = useParams();
+    const {  isJoinModalOpen } = useEditorContext();
   const { status, tryConnect, sendMessage, subscribe, setSessionId, sendAuthMessage, userJoinedSession } = useWebSocket();
-  const { sessionId } = sessionData || {};
+
   const { guestIdentifier } = local("json", "key").get(`sessionIdentifier-${sessionId}`) || {};
   const currentUser: CurrentUserInterface = guestIdentifier;
+
   const [keyboardVisible, setKeyboardVisible] = useState(true);
 
-  const [isFocusMode, setIsFocusMode] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   useEffect(() => {
@@ -40,8 +40,8 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
   }, [isJoinModalOpen, tryConnect]);
 
   useEffect(() => {
-    setSessionId(sessionId || urlSessionId || null);
-  }, [sessionId, setSessionId, urlSessionId]);
+    setSessionId(sessionId || null);
+  }, [sessionId, setSessionId]);
 
   useEffect(() => {
     if (currentUser && sessionId) {
@@ -67,73 +67,61 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
   }, [sessionId, userJoinedSession, status, currentUser?.userId, currentUser?.fullName]);
 
   useEffect(() => {
-    const unsubscribeSessionReload = subscribe<ServerSessionMessagesInterface>(WS_MESSAGE_TYPES.SERVER_SESSION_MESSAGES, (data) => {
-      const messagesToAdd = (data.messages || []).filter(msg =>
-        msg && msg.createdAt && msg.userId && msg.content
-      );
+    const unsubscribeSessionReload = subscribe<ServerSessionMessagesInterface>(
+      WS_MESSAGE_TYPES.SERVER_SESSION_MESSAGES,
+      (data) => {
+        setMessages(prevMessages => {
+          const updatedMessages = [...prevMessages, ...data.messages] as ChatMessageInterface[];
 
-      setMessages(prevMessages => {
-        const newMessages = messagesToAdd.reduce((acc, message) => {
-          const isDuplicate = prevMessages.some(
-            msg => msg.createdAt === message.createdAt &&
-              msg.userId === message.userId &&
-              msg.content === message.content
-          );
-          if (!isDuplicate) {
-            acc.push(message as ServerChatMessageInterface);
+
+
+
+          local("json", "key").set(`sessionIdentifier-${sessionId}`, {
+            guestIdentifier: {
+              ...currentUser,
+              messages: updatedMessages
+            }
+          });
+
+          return updatedMessages;
+        });
+      }
+    );
+
+    const unsubscribe = subscribe<ServerChatMessageInterface>(
+      WS_MESSAGE_TYPES.SERVER_CHAT,
+      (message) => {
+        setMessages(prevMessages => {
+          const existingMessageIndex = prevMessages.findIndex(msg => msg.messageId === message.messageId);
+
+
+          if (existingMessageIndex !== -1) {
+            // Update existing message state
+            const updatedMessages = [...prevMessages];
+            updatedMessages[existingMessageIndex] = message;
+            return updatedMessages;
           }
-          return acc;
-        }, [...prevMessages]);
 
-        const sessionData = local("json", "key").get(`sessionIdentifier-${sessionId}`) || {};
-        if (sessionData.guestIdentifier) {
+          // Add new message
+          const newMessages = [...prevMessages, { ...message, state: 'sent' as const }];
+
           local("json", "key").set(`sessionIdentifier-${sessionId}`, {
-            ...sessionData,
-            updatedAt: getCurrentTimeStamp(),
             guestIdentifier: {
-              ...sessionData.guestIdentifier,
+              ...currentUser,
               messages: newMessages
             }
           });
-        }
 
-        return newMessages;
-      });
-    });
-
-    const unsubscribe = subscribe<ServerChatMessageInterface>(WS_MESSAGE_TYPES.SERVER_CHAT, (message) => {
-      setMessages(prevMessages => {
-        const isDuplicate = prevMessages.some(
-          msg => msg.createdAt === message.createdAt &&
-            msg.userId === message.userId &&
-            msg.content === message.content
-        );
-        if (isDuplicate) return prevMessages;
-
-        const newMessages = [...prevMessages, message];
-
-        const sessionData = local("json", "key").get(`sessionIdentifier-${sessionId}`) || {};
-        requestAnimationFrame(() => scrollToBottom(true));
-        if (sessionData.guestIdentifier) {
-          local("json", "key").set(`sessionIdentifier-${sessionId}`, {
-            ...sessionData,
-            updatedAt: getCurrentTimeStamp(),
-            guestIdentifier: {
-              ...sessionData.guestIdentifier,
-              messages: newMessages
-            }
-          });
-        }
-
-        return newMessages;
-      });
-    });
+          return newMessages;
+        });
+      }
+    );
 
     return () => {
       unsubscribe();
       unsubscribeSessionReload();
     };
-  }, [status, subscribe, sessionId]);
+  }, [status, subscribe, sessionId, currentUser]);
 
   useEffect(() => {
     const sessionData = local("json", "key").get(`sessionIdentifier-${sessionId}`);
@@ -271,13 +259,14 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
     };
   }, []); // Empty dependency array since we don't need any external values
 
-  useEffect(() => {
-    const saved = local('json', 'key').get('editorFocusMode');
-    setIsFocusMode(saved || false);
-  }, [sessionData]);
-
   const handleSendMessage = (messageContent: string) => {
+
+
+    if (!messageContent) return;
+    if (!currentUser) return;
+    const messageId = uuidv4(); // Generate unique ID for the message
     const messageData: ChatMessageInterface = {
+      messageId, // Add this to your interface if not already present
       type: WS_MESSAGE_TYPES.CLIENT_CHAT,
       sessionId: sessionId || '',
       userId: currentUser.userId,
@@ -286,6 +275,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
       createdAt: getCurrentTimeStamp(),
     };
 
+    setMessages(prev => [...prev, { ...messageData, state: 'sending' as const }]);
     sendMessage(messageData);
     scrollToBottom(true);
     onSendMessage(messageContent);
@@ -294,7 +284,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
 
   useEffect(() => {
     console.log('keyboardHeight', keyboardHeight);
-  }, [keyboardHeight]);
+  }, [keyboardHeight, currentUser]);
 
   return (
     <div className="flex flex-col h-[100dvh] fixed inset-0">
