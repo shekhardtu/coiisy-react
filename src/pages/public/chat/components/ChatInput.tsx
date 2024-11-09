@@ -1,3 +1,4 @@
+import { cn } from '@/lib/utils';
 import { Send } from "lucide-react";
 import React, { useRef } from 'react';
 import { ChatStatus } from './chat.types';
@@ -6,13 +7,14 @@ interface ChatInputProps {
   status: ChatStatus['status'];
   onSendMessage: (message: string) => void;
   keyboardVisible: boolean;
+  keyboardHeight: number;
+  className?: string;
+
 }
 
-const ChatInput: React.FC<ChatInputProps> = ({ status, onSendMessage, keyboardVisible }) => {
+  const ChatInput: React.FC<ChatInputProps> = ({ status, onSendMessage, keyboardVisible, className }) => {
 
   const inputRef = useRef<HTMLInputElement>(null);
-
-
 
   const handleSendMessage = () => {
     if (!inputRef.current || !inputRef.current.value.trim() || status !== 'connected') return;
@@ -20,40 +22,45 @@ const ChatInput: React.FC<ChatInputProps> = ({ status, onSendMessage, keyboardVi
     const messageContent = inputRef.current.value.trim();
     onSendMessage(messageContent);
     inputRef.current.value = "";
-
-    if (keyboardVisible) {
-      inputRef.current.focus();
-      // inputRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      handleSendMessage();
-    }
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    handleSendMessage();
   };
 
+    console.log(keyboardVisible);
+
   return (
-    <div className={`
-      flex-none bg-background border-t border-border p-3 sm:p-4 pb-8
-      left-0 right-0
-      bottom-8 sm:bottom-0
-      sticky
-      ${keyboardVisible ? 'bottom-0' : 'bottom-4'}
-      z-[1000]
-    `}>
+    <div
+      className={cn(
+        "bg-background p-3 sm:p-4 bottom-8 sm:bottom-12 left-0 right-0 z-10",
+        keyboardVisible ? 'mb-[env(keyboard-inset-height,0)] fixed' : 'mb-0 bottom-0',
+        className,
+
+
+
+      )}
+
+    >
       <form
         onSubmit={(e) => {
           e.preventDefault();
           handleSendMessage();
         }}
-        className="flex items-center gap-2 max-w-full bg-background"
+        className="flex items-center gap-2 max-w-full"
       >
         <div className="relative flex-1">
           <input
             type="text"
             ref={inputRef}
             onKeyDown={handleKeyPress}
+            onBlur={() => {
+              if (keyboardVisible) {
+                inputRef.current?.blur();
+              }
+            }}
             placeholder={status === 'connected' ? "Type a message..." : "Connecting to chat..."}
             aria-label="Chat message"
             className="w-full px-4 py-2.5 text-base bg-input text-foreground rounded-full
@@ -62,8 +69,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ status, onSendMessage, keyboardVi
           />
           {status === 'connected' && (
             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-muted-foreground/50
-              hidden [@media(hover:hover)]:inline-block"
-            >
+              hidden [@media(hover:hover)]:inline-block">
               Press Enter ↵
             </span>
           )}

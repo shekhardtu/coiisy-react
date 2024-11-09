@@ -5,10 +5,10 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from 'react-router-dom';
 import { AuthMessageInterface, ChatMessageInterface, ServerChatMessageInterface, ServerSessionMessagesInterface } from '../coEditor/components/Editor.types';
 import useEditorContext from '../coEditor/hooks/useEditor.contexthook';
+import { CurrentUserInterface } from './components/chat.types';
 import ChatHeader from './components/ChatHeader';
 import ChatInput from './components/ChatInput';
 import ChatMessages from './components/ChatMessages';
-import { CurrentUserInterface } from './components/chat.types';
 
 
 
@@ -21,7 +21,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
   const [messages, setMessages] = useState<ServerChatMessageInterface[]>([]);
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
-  const clearTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const { sessionId: urlSessionId } = useParams();
   const { sessionData, isJoinModalOpen } = useEditorContext();
   const { status, tryConnect, sendMessage, subscribe, setSessionId, sendAuthMessage, userJoinedSession } = useWebSocket();
@@ -29,8 +29,9 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
   const { guestIdentifier } = local("json", "key").get(`sessionIdentifier-${sessionId}`) || {};
   const currentUser: CurrentUserInterface = guestIdentifier;
   const [keyboardVisible, setKeyboardVisible] = useState(true);
-  const [viewportHeight, setViewportHeight] = useState(window.innerHeight);
+
   const [isFocusMode, setIsFocusMode] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   useEffect(() => {
     if (!isJoinModalOpen) {
@@ -112,6 +113,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
         const newMessages = [...prevMessages, message];
 
         const sessionData = local("json", "key").get(`sessionIdentifier-${sessionId}`) || {};
+        requestAnimationFrame(() => scrollToBottom(true));
         if (sessionData.guestIdentifier) {
           local("json", "key").set(`sessionIdentifier-${sessionId}`, {
             ...sessionData,
@@ -141,40 +143,35 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
   }, [sessionId]);
 
   const scrollToBottom = useCallback((force = false) => {
-
     if (!chatContainerRef.current) return;
 
     const container = chatContainerRef.current;
     const { scrollHeight, scrollTop, clientHeight } = container;
-
     const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
 
     if (isNearBottom || force) {
       container.scrollTo({
         top: scrollHeight,
-        behavior: force ? 'auto' : 'smooth',
+        behavior: 'smooth',
       });
-
-      if (clearTimeoutRef.current) {
-        clearTimeout(clearTimeoutRef.current);
-      }
-
-
     }
   }, []);
 
   useEffect(() => {
     const styleSheet = document.createElement("style");
     styleSheet.innerText = `
-      @keyframes slideUpFade {
+      @keyframes slideUp {
         0% {
           opacity: 0;
-          transform: translateY(18px);
+          transform: translateY(20px);
         }
         100% {
           opacity: 1;
           transform: translateY(0);
         }
+      }
+      .animate-slideUp {
+        animation: slideUp 0.3s ease-out forwards;
       }
     `;
     document.head.appendChild(styleSheet);
@@ -184,29 +181,95 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
     };
   }, []);
 
-  useEffect(() => {
-    const handleResize = () => {
-      const newHeight = window.innerHeight;
-      const newViewportHeight = window.visualViewport?.height || newHeight;
-      setViewportHeight(newViewportHeight);
 
-      const heightDiff = window.outerHeight - newViewportHeight;
-      const isKeyboardLikelyVisible = heightDiff > 150;
-      setKeyboardVisible(isKeyboardLikelyVisible);
+  useEffect(() => {
+    // Initial viewport dimensions
+    let initialHeight = window.innerHeight;
+    const MIN_KEYBOARD_HEIGHT = 150;
+    const VIEWPORT_UPDATE_DEBOUNCE = 100;
+
+    let resizeTimeout: NodeJS.Timeout | null = null;
+
+    const handleResize = () => {
+      // Clear existing timeout to debounce rapid updates
+      if (resizeTimeout) {
+        clearTimeout(resizeTimeout);
+      }
+
+      resizeTimeout = setTimeout(() => {
+        // Ensure visualViewport is supported
+        if (!window.visualViewport) {
+          const newHeight = window.innerHeight;
+          const heightDiff = initialHeight - newHeight;
+
+          setKeyboardVisible(heightDiff > MIN_KEYBOARD_HEIGHT);
+          setKeyboardHeight(heightDiff > MIN_KEYBOARD_HEIGHT ? heightDiff : 0);
+          return;
+        }
+
+        // Use visualViewport when available
+        const newViewportHeight = window.visualViewport.height;
+        const heightDiff = Math.abs(initialHeight - newViewportHeight);
+        const isKeyboard = heightDiff > MIN_KEYBOARD_HEIGHT;
+
+        // Update state only if there's a significant change
+        setKeyboardVisible(isKeyboard);
+        setKeyboardHeight((prev) => {
+          const newHeight = isKeyboard ? heightDiff : 0;
+          return Math.abs(prev - newHeight) > 1 ? newHeight : prev;
+        });
+
+      }, VIEWPORT_UPDATE_DEBOUNCE);
     };
 
-    window.addEventListener('resize', handleResize);
-    window.visualViewport?.addEventListener('resize', handleResize);
-    window.visualViewport?.addEventListener('scroll', handleResize);
+    // Handle orientation changes
+    const handleOrientationChange = () => {
+      // Reset initial height after orientation change
+      setTimeout(() => {
+        initialHeight = window.innerHeight;
+        handleResize();
+      }, 300); // Wait for orientation change to complete
+    };
 
+    // Handle page visibility changes
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        initialHeight = window.innerHeight;
+        handleResize();
+      }
+    };
+
+    // Add event listeners
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResize);
+      window.visualViewport.addEventListener('scroll', handleResize);
+    } else {
+      window.addEventListener('resize', handleResize);
+    }
+
+    window.addEventListener('orientationchange', handleOrientationChange);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Initial setup
     handleResize();
 
+    // Cleanup
     return () => {
-      window.removeEventListener('resize', handleResize);
-      window.visualViewport?.removeEventListener('resize', handleResize);
-      window.visualViewport?.removeEventListener('scroll', handleResize);
+      if (resizeTimeout) {
+        clearTimeout(resizeTimeout);
+      }
+
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleResize);
+        window.visualViewport.removeEventListener('scroll', handleResize);
+      } else {
+        window.removeEventListener('resize', handleResize);
+      }
+
+      window.removeEventListener('orientationchange', handleOrientationChange);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, []);
+  }, []); // Empty dependency array since we don't need any external values
 
   useEffect(() => {
     const saved = local('json', 'key').get('editorFocusMode');
@@ -228,27 +291,35 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
     onSendMessage(messageContent);
   };
 
-  return (
-    <div
-      className={`flex flex-col inset-x-0 bg-background ${
-        isFocusMode ? 'top-8' : 'top-14'
-      }`}
-      style={{
-        bottom: 0,
-        height: keyboardVisible
-          ? `${viewportHeight}px`
-          : `calc(100vh - ${isFocusMode ? '4rem' : '5.5rem'})`,
-        maxHeight: '100vh',
 
-      }}
-    >
-      <ChatHeader status={status} tryConnect={tryConnect} />
-      <ChatMessages messages={messages} currentUser={currentUser} scrollToBottom={scrollToBottom}
-        chatContainerRef={chatContainerRef}
-        keyboardVisible={keyboardVisible}
+  useEffect(() => {
+    console.log('keyboardHeight', keyboardHeight);
+  }, [keyboardHeight]);
+
+  return (
+    <div className="flex flex-col h-[100dvh] fixed inset-0">
+      <ChatHeader
+        status={status}
+        tryConnect={tryConnect}
+        className="flex-none border-b border-border"
       />
-      <ChatInput status={status} onSendMessage={handleSendMessage}
+      <div className="flex-1 overflow-hidden relative">
+        <ChatMessages
+          messages={messages}
+          currentUser={currentUser}
+          scrollToBottom={scrollToBottom}
+          chatContainerRef={chatContainerRef}
+          keyboardVisible={keyboardVisible}
+          keyboardHeight={keyboardHeight}
+          className="absolute inset-0 overflow-y-auto px-4"
+        />
+      </div>
+      <ChatInput
+        status={status}
+        onSendMessage={handleSendMessage}
         keyboardVisible={keyboardVisible}
+        keyboardHeight={keyboardHeight}
+        className="flex-none border-t border-border bottom-10 sticky"
       />
     </div>
   );
