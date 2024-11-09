@@ -1,11 +1,11 @@
 import { cn } from '@/lib/utils';
 import React, { useEffect, useRef } from 'react';
-import { ServerChatMessageInterface } from '../../coEditor/components/Editor.types';
+import { ChatMessageInterface } from '../../coEditor/components/Editor.types';
 import { CurrentUserInterface } from './chat.types';
 import ChatMessage from './ChatMessage';
 
 interface ChatMessagesProps {
-  messages: ServerChatMessageInterface[];
+  messages: ChatMessageInterface[];
   currentUser: CurrentUserInterface;
   scrollToBottom: (force?: boolean) => void;
   keyboardVisible: boolean;
@@ -40,8 +40,8 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, currentUser, scro
       className={cn("h-full", className)}
       ref={chatContainerRef}
     >
-      <div className="space-y-3 sm:space-y-4 py-4 pb-20">
-        {messages.map((msg, index) => (
+      <div className="space-y-3 sm:space-y-4 py-4 pb-20 mt-10">
+        {messages.length > 0 && messages?.map((msg, index) => (
           <ChatMessage
             key={`${msg.createdAt}-${msg.userId}-${msg.content}`}
             message={msg}
