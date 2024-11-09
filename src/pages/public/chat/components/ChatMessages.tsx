@@ -1,3 +1,4 @@
+import { cn } from '@/lib/utils';
 import React, { useEffect, useRef } from 'react';
 import { ServerChatMessageInterface } from '../../coEditor/components/Editor.types';
 import { CurrentUserInterface } from './chat.types';
@@ -8,12 +9,17 @@ interface ChatMessagesProps {
   currentUser: CurrentUserInterface;
   scrollToBottom: (force?: boolean) => void;
   keyboardVisible: boolean;
-
+  keyboardHeight: number;
   chatContainerRef: React.RefObject<HTMLDivElement>;
+  className?: string;
 }
 
-const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, currentUser, scrollToBottom,  chatContainerRef , keyboardVisible}) => {
+const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, currentUser, scrollToBottom, chatContainerRef, keyboardVisible,
+  keyboardHeight, className
+}) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const windowHeight = useRef(window.innerHeight);
 
   useEffect(() => {
     if (messages.length > 0) {
@@ -21,17 +27,20 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, currentUser, scro
     }
   }, [messages, scrollToBottom]);
 
+
+  useEffect(() => {
+    console.log(keyboardVisible, keyboardHeight);
+    console.log(`${windowHeight.current - (keyboardVisible ? (keyboardHeight ) : 120)}px`);
+  }, [keyboardVisible, keyboardHeight]);
+
+
+
   return (
     <div
-      className="flex-1 overflow-y-auto overscroll-none"
+      className={cn("h-full", className)}
       ref={chatContainerRef}
-      style={{
-        WebkitOverflowScrolling: 'touch',
-        position: 'relative',
-        paddingBottom: keyboardVisible ? '60px' : '0'
-      }}
     >
-      <div className="p-2 sm:p-4 space-y-3 sm:space-y-4">
+      <div className="space-y-3 sm:space-y-4 py-4 pb-20">
         {messages.map((msg, index) => (
           <ChatMessage
             key={`${msg.createdAt}-${msg.userId}-${msg.content}`}
@@ -41,7 +50,7 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, currentUser, scro
             previousMessage={index > 0 ? messages[index - 1] : undefined}
           />
         ))}
-        <div ref={messagesEndRef} className="h-0" />
+        <div ref={messagesEndRef} />
       </div>
     </div>
   );

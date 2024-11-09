@@ -1,13 +1,14 @@
+import { cn } from '@/lib/utils';
 import React from 'react';
 import { ChatStatus } from './chat.types';
-
 interface ChatHeaderProps {
   status: ChatStatus['status'];
   tryConnect: ChatStatus['tryConnect'];
+  className?: string;
 }
 
-const ChatHeader: React.FC<ChatHeaderProps> = ({ status, tryConnect }) => (
-  <div className="flex-none bg-background z-30 h-14 sm:h-16">
+const ChatHeader: React.FC<ChatHeaderProps> = ({ status, tryConnect, className }) => (
+  <div className={cn("flex-none bg-background z-30 h-auto", className)}>
     <div className="px-3 sm:px-4 py-2 border-b border-border flex items-center justify-between">
       <span className="text-sm font-medium">Chat</span>
       <div className="flex items-center gap-2">

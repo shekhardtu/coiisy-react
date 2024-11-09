@@ -12,8 +12,7 @@ const ChatMessage = React.memo(({ message, currentUser, isNewMessage = false, pr
   <div
     className={`flex ${message.userId === currentUser?.userId ? 'justify-end' : 'justify-start'}`}
     style={{
-      opacity: isNewMessage ? 0.1 : 1,
-      animation: isNewMessage ? 'slideUpFade 0.2s ease-out forwards' : undefined,
+      animation: isNewMessage ? 'slideUpFade 0.3s ease-out forwards' : undefined,
       willChange: isNewMessage ? 'transform, opacity' : undefined
     }}
   >

@@ -409,7 +409,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 
 // Type-safe logging
 const log = (message: string, ...args: Array<string | number | Error>) => {
-  if (!import.meta.env.PROD) {
+  if (!import.meta.env.PROD && import.meta.env.VITE_DEV_LOG_ENABLED === 'true') {
     console.log(`[WebSocket] ${message}`, ...args);
   }
 };

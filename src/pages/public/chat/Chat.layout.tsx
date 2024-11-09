@@ -53,7 +53,7 @@ const EditorLayoutContent: React.FC<{ existingSessionId: string | undefined }> =
 
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen relative overflow-hidden">
       <EditorHeader onThemeChange={handleThemeChange} theme={theme} />
       <main className="flex-1 relative">
         <EditorErrorBoundary>
@@ -69,7 +69,7 @@ const EditorLayoutContent: React.FC<{ existingSessionId: string | undefined }> =
       <EditorFooter
         cursorPosition={cursorPosition}
         isWebSocketConnected={isWebSocketConnected}
-        className="sticky bottom-0 left-0 right-0"
+        className="fixed left-0 right-0 bottom-0"
       />
     </div>
   );
