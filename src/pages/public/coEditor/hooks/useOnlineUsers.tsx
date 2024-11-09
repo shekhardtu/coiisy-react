@@ -4,12 +4,19 @@ import { WS_MESSAGE_TYPES } from "@/lib/webSocket.config";
 import { useEffect, useState } from "react";
 import { OnlineUserInterface, ServerUserDisconnectedInterface, ServerUserJoinedSessionInterface } from "../components/Editor.types";
 
+const STORAGE_KEY = 'online_users';
+
 export const useOnlineUsers = (minutes: number = 30) => {
-  const [userHistory, setUserHistory] = useState<OnlineUserInterface[]>([]);
+  const [userHistory, setUserHistory] = useState<OnlineUserInterface[]>(() => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(userHistory));
+  }, [userHistory]);
 
   const { subscribe } = useWebSocket();
-
-
 
   useEffect(() => {
     const unsubscribeUserJoined = subscribe(
@@ -26,7 +33,6 @@ export const useOnlineUsers = (minutes: number = 30) => {
             lastSeenAt: user.lastSeenAt,
           }))
           .sort((a) => (a.isOnline ? -1 : 1));
-
 
         setUserHistory(prev => {
           const merged = [...prev];
@@ -46,7 +52,6 @@ export const useOnlineUsers = (minutes: number = 30) => {
     const unsubscribeUserLeft = subscribe(
       WS_MESSAGE_TYPES.SERVER_USER_DISCONNECTED,
       (data: ServerUserDisconnectedInterface) => {
-
         setUserHistory((prevUsers) =>
           prevUsers.map((u) =>
             u.userId === data.userId

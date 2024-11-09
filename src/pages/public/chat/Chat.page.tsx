@@ -84,8 +84,10 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
       WS_MESSAGE_TYPES.SERVER_SESSION_MESSAGES,
       (data) => {
         setMessages(prevMessages => {
+
           const allMessages = [...prevMessages, ...data.messages] as ChatMessageInterface[];
           const uniqueMessages = deduplicateMessages(allMessages);
+
 
           local("json", "key").set(`sessionIdentifier-${sessionId}`, {
             guestIdentifier: {
@@ -103,19 +105,19 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
       WS_MESSAGE_TYPES.SERVER_CHAT,
       (message) => {
         setMessages(prevMessages => {
+          let newMessages;
           const existingMessageIndex = prevMessages.findIndex(msg => msg.messageId === message.messageId);
-
 
           if (existingMessageIndex !== -1) {
             // Update existing message state
-            const updatedMessages = [...prevMessages];
-            updatedMessages[existingMessageIndex] = message;
-            return updatedMessages;
+            newMessages = [...prevMessages];
+            newMessages[existingMessageIndex] = { ...message, state: 'sent' as const };
+          } else {
+            // Add new message
+            newMessages = [...prevMessages, { ...message, state: 'sent' as const }];
           }
 
-          // Add new message
-          const newMessages = [...prevMessages, { ...message, state: 'sent' as const }];
-
+          // Save to localStorage for both cases
           local("json", "key").set(`sessionIdentifier-${sessionId}`, {
             guestIdentifier: {
               ...currentUser,
