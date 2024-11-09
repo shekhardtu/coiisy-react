@@ -186,6 +186,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     type: T['type'],
     callback: MessageHandler<T>
   ) => {
+
     if (!listenersRef.current.has(type)) {
       listenersRef.current.set(type, new Set());
     }
@@ -312,42 +313,43 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     stateRef.current.reconnectCount = 0;
     isConnectingRef.current = false;
 
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      const disconnectMessage = {
-        type: 'client_user_disconnected',
-        sessionId: sessionId,
-        userId: currentUser?.userId,
-      };
-
-      wsRef.current.send(JSON.stringify(disconnectMessage));
-
-      setTimeout(() => {
-        try {
-          // Use a simple close code without a reason string
-          wsRef.current?.close(4000); // Using 4000 as a custom code for normal closure
-          wsRef.current = null;
-          setStatus('disconnected');
-        } catch (error) {
-          console.error('Error closing WebSocket:', error);
+    if (wsRef.current) {
+      try {
+        if (wsRef.current.readyState === WebSocket.OPEN) {
+          const disconnectMessage = {
+            type: WS_MESSAGE_TYPES.CLIENT_USER_DISCONNECTED,
+            sessionId: sessionId,
+            userId: currentUser?.userId,
+          };
+          wsRef.current.send(JSON.stringify(disconnectMessage));
         }
-      }, 100);
 
+        // wsRef.current.close();
+        // wsRef.current = null;
+      } catch (error) {
+        console.error('Error closing WebSocket:', error);
+      }
     }
-  }, [clearAllTimeouts, currentUser]);
+  }, [clearAllTimeouts, currentUser, sessionId]);
 
   // Single effect for initial connection
   useEffect(() => {
     if (
       wsConfig.enableStartupAutoConnect &&
       status === 'disconnected' &&
-      !isConnectingRef.current
+      !isConnectingRef.current &&
+      sessionId // Only connect if we have a sessionId
     ) {
       tryConnect();
     }
+
+    // Cleanup function
     return () => {
-      disconnect();
+      if (wsRef.current) {
+        disconnect();
+      }
     };
-  }, []);  // Empty dependency array for initial connection only
+  }, [sessionId]); // Add sessionId as dependency
 
 
 

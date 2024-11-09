@@ -37,7 +37,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
     if (!isJoinModalOpen) {
       tryConnect();
     }
-  }, [isJoinModalOpen, tryConnect]);
+  }, [isJoinModalOpen]);
 
   useEffect(() => {
     setSessionId(sessionId || null);
@@ -66,24 +66,35 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
     }
   }, [sessionId, userJoinedSession, status, currentUser?.userId, currentUser?.fullName]);
 
+  const deduplicateMessages = (messages: ChatMessageInterface[]): ChatMessageInterface[] => {
+    const seen = new Map();
+    return messages.filter(msg => {
+      if (seen.has(msg.messageId)) {
+        return false;
+      }
+      seen.set(msg.messageId, true);
+      return true;
+    });
+  };
+
   useEffect(() => {
+
+
     const unsubscribeSessionReload = subscribe<ServerSessionMessagesInterface>(
       WS_MESSAGE_TYPES.SERVER_SESSION_MESSAGES,
       (data) => {
         setMessages(prevMessages => {
-          const updatedMessages = [...prevMessages, ...data.messages] as ChatMessageInterface[];
-
-
-
+          const allMessages = [...prevMessages, ...data.messages] as ChatMessageInterface[];
+          const uniqueMessages = deduplicateMessages(allMessages);
 
           local("json", "key").set(`sessionIdentifier-${sessionId}`, {
             guestIdentifier: {
               ...currentUser,
-              messages: updatedMessages
+              messages: uniqueMessages
             }
           });
 
-          return updatedMessages;
+          return uniqueMessages;
         });
       }
     );
@@ -125,9 +136,12 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
 
   useEffect(() => {
     const sessionData = local("json", "key").get(`sessionIdentifier-${sessionId}`);
-    if (sessionData && sessionData?.guestIdentifier?.messages) {
-      setMessages(sessionData.guestIdentifier.messages);
+    if (sessionData?.guestIdentifier?.messages) {
+      setMessages(deduplicateMessages(sessionData.guestIdentifier.messages));
     }
+    return () => {
+      setMessages([]);
+    };
   }, [sessionId]);
 
   const scrollToBottom = useCallback((force = false) => {
@@ -282,9 +296,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
   };
 
 
-  useEffect(() => {
-    console.log('keyboardHeight', keyboardHeight);
-  }, [keyboardHeight, currentUser]);
+
 
   return (
     <div className="flex flex-col h-[100dvh] fixed inset-0">
