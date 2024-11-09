@@ -30,7 +30,6 @@ interface ChatInputProps {
     handleSendMessage();
   };
 
-    console.log(keyboardVisible);
 
   return (
     <div

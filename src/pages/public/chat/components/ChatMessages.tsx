@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import React, { useEffect, useRef } from 'react';
+import React, { memo, useEffect, useRef } from 'react';
 import { ChatMessageInterface } from '../../coEditor/components/Editor.types';
 import { CurrentUserInterface } from './chat.types';
 import ChatMessage from './ChatMessage';
@@ -43,7 +43,7 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, currentUser, scro
       <div className="space-y-3 sm:space-y-4 py-4 pb-20 mt-10">
         {messages.length > 0 && messages?.map((msg, index) => (
           <ChatMessage
-            key={`${msg.createdAt}-${msg.userId}-${msg.content}`}
+            key={`${msg.createdAt}-${msg.userId}-${msg.messageId}`}
             message={msg}
             currentUser={currentUser}
             isNewMessage={index === messages.length - 1}
@@ -56,4 +56,4 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, currentUser, scro
   );
 };
 
-export default ChatMessages;
+export default memo(ChatMessages);
