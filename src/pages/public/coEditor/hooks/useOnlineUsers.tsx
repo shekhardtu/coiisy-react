@@ -1,5 +1,4 @@
 import { useWebSocket } from "@/contexts/WebSocketContext";
-import { getUnitsToMinutes } from "@/lib/utils";
 import { WS_MESSAGE_TYPES } from "@/lib/webSocket.config";
 import { useEffect, useState } from "react";
 import { OnlineUserInterface, ServerUserDisconnectedInterface, ServerUserJoinedSessionInterface } from "../components/Editor.types";
@@ -28,7 +27,7 @@ export const useOnlineUsers = (minutes: number = 30) => {
             fullName: user.fullName,
             isOnline: user.isOnline,
             userId: user.userId,
-            isShow: user.isOnline || (new Date().getTime() - new Date(user.lastSeenAt).getTime() <= getUnitsToMinutes(minutes)),
+            isShow: true,
             connectedAt: user.connectedAt,
             lastSeenAt: user.lastSeenAt,
           }))
@@ -39,12 +38,17 @@ export const useOnlineUsers = (minutes: number = 30) => {
           newUsers.forEach(newUser => {
             const existingIndex = merged.findIndex(u => u.userId === newUser.userId);
             if (existingIndex >= 0) {
-              merged[existingIndex] = newUser;
+              merged[existingIndex] = {
+                ...merged[existingIndex],
+                isOnline: newUser.isOnline,
+                connectedAt: newUser.connectedAt,
+                lastSeenAt: newUser.lastSeenAt,
+              };
             } else {
               merged.push(newUser);
             }
           });
-          return merged;
+          return merged.sort((a) => (a.isOnline ? -1 : 1));
         });
       }
     );
@@ -59,9 +63,10 @@ export const useOnlineUsers = (minutes: number = 30) => {
                   ...u,
                   lastSeenAt: data.lastSeenAt,
                   isOnline: false,
+                  isShow: true,
                 }
               : u
-          )
+          ).sort((a) => (a.isOnline ? -1 : 1))
         );
       }
     );

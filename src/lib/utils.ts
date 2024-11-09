@@ -34,7 +34,6 @@ export function local(
     },
     set: (key: string, value: string | object | boolean) => {
       if (type === "json") {
-
         const stringValue = JSON.stringify(value)
         return window.localStorage.setItem(`${prefix}:${key}`, stringValue)
       }
