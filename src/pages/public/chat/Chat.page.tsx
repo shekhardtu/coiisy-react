@@ -1,3 +1,4 @@
+import KeyboardAwareFloat from "@/components/keyboard-aware/KeyboardAwareFloat";
 import { useWebSocket } from "@/contexts/WebSocketContext";
 import { cn, getCurrentTimeStamp, local } from "@/lib/utils";
 import { WS_MESSAGE_TYPES } from "@/lib/webSocket.config";
@@ -330,15 +331,19 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
       <div
         className={cn(
           "transition-transform duration-300 fixed top-0 left-0 right-0 z-50",
-          isHeaderVisible ? "-translate-y-full " : "translate-y-0 fixed"
+          isHeaderVisible ? "-translate-y-full z-auto" : "translate-y-0"
         )}
       >
-
+        <KeyboardAwareFloat
+          keyboardVisible={keyboardVisible}
+          keyboardHeight={keyboardHeight}
+        >
           <ChatHeader
             status={status}
-          tryConnect={tryConnect}
-            className="flex-none border-b border-border sticky top-0 z-40"
+            tryConnect={tryConnect}
+            className="flex-none border-b border-border"
           />
+        </KeyboardAwareFloat>
 
       </div>
       <div className="flex-1 overflow-hidden relative">
