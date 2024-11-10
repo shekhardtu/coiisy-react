@@ -24,7 +24,6 @@ import { NavActions } from "./NavActions";
 
 const ChatHeader: React.FC<ChatHeaderProps> = ({
   status,
-  tryConnect,
   className,
 }) => {
   const editorContext = useContext(EditorContext)
@@ -58,7 +57,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <div
-                    className="flex items-center text-xs bg-white transition-colors border border-border z-40 rounded-sm px-2 py-2 sm:px-1.5 sm:py-1.5 sm:w-auto
+                    className="flex items-center text-xs bg-background transition-colors border border-border z-40 rounded-sm px-2 py-2 sm:px-1.5 sm:py-1.5 sm:w-auto
                 hover:bg-muted cursor-pointer"
                   >
                     <Share2 className="h-3.5 w-3.5" />
@@ -97,19 +96,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
         </div>
       </div>
 
-      {status === "disconnected" && (
-        <div className="p-2 bg-yellow-500/10 border-b border-yellow-500/20 flex items-center justify-center">
-          <p className="text-xs text-center text-yellow-600 mr-2">
-            Connection lost. Messages won't be delivered until reconnected.
-          </p>
-          <button
-            onClick={tryConnect}
-            className="text-xs px-2 py-1 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
-          >
-            Reconnect
-          </button>
-        </div>
-      )}
+
     </header>
   )
 }

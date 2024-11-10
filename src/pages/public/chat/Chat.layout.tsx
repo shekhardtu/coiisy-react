@@ -50,19 +50,17 @@ const EditorLayoutContent: React.FC<{ existingSessionId: string | undefined }> =
 
   }, [existingSessionId, initializeSession, navigate, sessionId, setSessionData]);
 
-  useEffect(() => {
-    console.log('isHeaderVisible', isHeaderVisible);
 
-  }, [isHeaderVisible]);
 
 
 
   return (
-    <div className="flex flex-col h-[100dvh] relative bg-red-400">
+    <div className="flex flex-col h-[100dvh] relative">
+
       <div
         className={cn(
           "transition-transform duration-300 fixed top-0 left-0 right-0 z-50",
-          isHeaderVisible ? 'translate-y-0 ' : '-translate-y-full hidden'
+          isHeaderVisible ? 'translate-y-0 ' : '-translate-y-full'
         )}
       >
         <EditorHeader onThemeChange={handleThemeChange} theme={theme} />
