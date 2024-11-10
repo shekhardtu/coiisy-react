@@ -8,11 +8,11 @@ interface ChatInputProps {
   onSendMessage: (message: string) => void;
   keyboardVisible: boolean;
   keyboardHeight: number;
-
+  tryConnect: () => void;
 
 }
 
-  const ChatInput: React.FC<ChatInputProps> = ({ status, onSendMessage, keyboardVisible }) => {
+  const ChatInput: React.FC<ChatInputProps> = ({ status, onSendMessage, keyboardVisible, tryConnect }) => {
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -31,13 +31,28 @@ interface ChatInputProps {
   };
 
 
-  return (
+    return (
+    <div className='relative' >
+
+        {status === "disconnected" && (
+        <div className="p-2 bg-yellow-500/10 border-b border-yellow-500/20 flex items-center justify-center">
+          <p className="text-xs text-center text-yellow-600 mr-2">
+            Connection lost. Messages won't be delivered until reconnected.
+          </p>
+          <button
+            onClick={tryConnect}
+            className="text-xs px-2 py-1 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
+          >
+            Reconnect
+          </button>
+        </div>
+      )}
     <div
       className={cn(
-        "bg-background p-3 sm:p-4 w-full border-t border-border",
-        keyboardVisible && 'fixed bottom-0 left-0 right-0 mb-[env(keyboard-inset-height,0)] pb-[calc(env(keyboard-inset-height,0)+16px)]',
-        "z-40 sticky bottom-0 flex-none",
-      )}
+        "bg-background p-3 sm:p-4 w-full border-t border-border sticky bottom-0 transition-all duration-800",
+        keyboardVisible ? 'bottom-0 left-0 right-0 mb-[env(keyboard-inset-height,0)] pb-16':
+        "z-40 flex-none",
+        )}
     >
       <form
         onSubmit={(e) => {
@@ -91,7 +106,8 @@ interface ChatInputProps {
           <Send size={20} className="sm:w-5 sm:h-5" />
         </button>
       </form>
-    </div>
+        </div>
+        </div>
   );
 };
 

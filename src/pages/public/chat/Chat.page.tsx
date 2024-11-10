@@ -357,7 +357,8 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
         status={status}
         onSendMessage={handleSendMessage}
         keyboardVisible={keyboardVisible}
-        keyboardHeight={keyboardHeight}
+          keyboardHeight={keyboardHeight}
+          tryConnect={tryConnect}
 
         />
       </div>
