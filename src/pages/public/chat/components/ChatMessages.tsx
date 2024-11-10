@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils';
-import React, { memo, useEffect, useRef } from 'react';
+import React, { memo, useContext, useEffect, useRef } from 'react';
 import { ChatMessageInterface } from '../../coEditor/components/Editor.types';
+import { EditorContext } from '../../coEditor/contexts/Editor.context';
 import { CurrentUserInterface } from './chat.types';
 import ChatMessage from './ChatMessage';
 
@@ -21,6 +22,14 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, currentUser, scro
 
   const windowHeight = useRef(window.innerHeight);
 
+  const editorContext = useContext(EditorContext);
+
+  if (!editorContext) {
+    throw new Error('ChatMessages must be used within EditorProvider');
+  }
+
+  const { handleHeaderVisibility } = editorContext;
+
   useEffect(() => {
     if (messages.length > 0) {
       scrollToBottom(true);
@@ -33,14 +42,27 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, currentUser, scro
     console.log(`${windowHeight.current - (keyboardVisible ? (keyboardHeight ) : 120)}px`);
   }, [keyboardVisible, keyboardHeight]);
 
+  useEffect(() => {
+    const container = chatContainerRef.current;
+    if (!container) return;
 
+    const handleScroll = () => {
+      handleHeaderVisibility(container);
+    };
+
+    container.addEventListener('scroll', handleScroll);
+
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+    };
+  }, [chatContainerRef, handleHeaderVisibility]);
 
   return (
     <div
       className={cn("h-full", className)}
       ref={chatContainerRef}
     >
-      <div className="space-y-3 sm:space-y-4 py-4 pb-20 mt-10">
+      <div className="space-y-3 sm:space-y-4 py-4 mt-10">
         {messages.length > 0 && messages?.map((msg, index) => (
           <ChatMessage
             key={`${msg.createdAt}-${msg.userId}-${msg.messageId}`}

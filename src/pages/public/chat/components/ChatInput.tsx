@@ -8,11 +8,11 @@ interface ChatInputProps {
   onSendMessage: (message: string) => void;
   keyboardVisible: boolean;
   keyboardHeight: number;
-  className?: string;
+
 
 }
 
-  const ChatInput: React.FC<ChatInputProps> = ({ status, onSendMessage, keyboardVisible, className }) => {
+  const ChatInput: React.FC<ChatInputProps> = ({ status, onSendMessage, keyboardVisible }) => {
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -34,14 +34,10 @@ interface ChatInputProps {
   return (
     <div
       className={cn(
-        "bg-background p-3 sm:p-4 bottom-8 sm:bottom-12 left-0 right-0 z-10",
-        keyboardVisible ? 'mb-[env(keyboard-inset-height,0)] fixed' : 'mb-0 bottom-0',
-        className,
-
-
-
+        "bg-background p-3 sm:p-4 w-full border-t border-border",
+        keyboardVisible && 'fixed bottom-0 left-0 right-0 mb-[env(keyboard-inset-height,0)] pb-[calc(env(keyboard-inset-height,0)+16px)]',
+        "z-40 sticky bottom-0 flex-none",
       )}
-
     >
       <form
         onSubmit={(e) => {
