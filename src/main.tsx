@@ -20,12 +20,14 @@ client.setConfig({
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <WebSocketProvider url={getWebSocketURL()}>
+
       <Dialog>
         <TooltipProvider>
           <Router />
         </TooltipProvider>
       </Dialog>
-      <Toaster />
+        <Toaster />
+
     </WebSocketProvider>
   </React.StrictMode>,
 )

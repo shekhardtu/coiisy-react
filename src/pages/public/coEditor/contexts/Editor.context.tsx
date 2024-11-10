@@ -1,5 +1,5 @@
 import { getCurrentTimeStamp, local } from '@/lib/utils';
-import React, { createContext, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { CurrentUserInterface, SessionDataInterface } from '../components/Editor.types';
 import { JoinSessionModal } from '../components/JoinSessionModal';
@@ -23,6 +23,9 @@ interface EditorContextType {
     totalCount: number;
   };
   setSessionStats: (sessionStats: { onlineCount: number; totalCount: number }) => void;
+  isHeaderVisible: boolean;
+  setIsHeaderVisible: (isVisible: boolean) => void;
+  handleHeaderVisibility: (container: HTMLDivElement) => void;
 }
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
@@ -48,6 +51,22 @@ export const EditorProvider: React.FC<{
     onlineCount: 0,
     totalCount: 0
   });
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+  const lastScrollTop = useRef(0);
+  const headerTimeoutRef = useRef<NodeJS.Timeout>();
+
+  const isMobileRef = useRef(window.innerWidth <= 768);
+  const resizeTimeoutRef = useRef<NodeJS.Timeout>();
+
+  // Cleanup function for timeouts
+  const clearTimeouts = useCallback(() => {
+    if (headerTimeoutRef.current) {
+      clearTimeout(headerTimeoutRef.current);
+    }
+    if (resizeTimeoutRef.current) {
+      clearTimeout(resizeTimeoutRef.current);
+    }
+  }, []);
 
   // Initialize session first
   useEffect(() => {
@@ -60,19 +79,16 @@ export const EditorProvider: React.FC<{
     }
   }, [sessionId]);
 
+  // Optimized session initialization
   const initializeSession = useCallback(async ({ sessionId }: { sessionId: string | undefined; }) => {
-
     setSessionId(sessionId);
     if (!sessionId) return;
 
     const savedSessionData = local("json", STORAGE_KEY).get(`sessionIdentifier-${sessionId}`);
-
     if (savedSessionData?.guestIdentifier) {
       setSessionData(savedSessionData);
-      setSessionId(sessionId);
       return;
     }
-
     setIsJoinModalOpen(true);
   }, []);
 
@@ -113,24 +129,68 @@ export const EditorProvider: React.FC<{
     }
   }, [sessionData, sessionId]);
 
-  // Persist theme changes
+  // Theme handling
   useEffect(() => {
-    if (theme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, [theme, sessionData]);
+    document.documentElement.classList.toggle("dark", theme === "dark");
+  }, [theme]);
 
   const handleThemeChange = useCallback((newTheme: "light" | "dark") => {
     setTheme(newTheme);
     if (sessionData) {
-      const updated = { ...sessionData, theme: newTheme };
-      setSessionData(updated);
-
+      setSessionData(prev => prev ? { ...prev, theme: newTheme } : null);
     }
   }, [sessionData]);
 
+  // Optimized header visibility handler
+  const handleHeaderVisibility = useCallback((container: HTMLDivElement) => {
+    if (isMobileRef.current) {
+      setIsHeaderVisible(false);
+      return;
+    }
+
+    const currentScrollTop = container.scrollTop;
+    setIsHeaderVisible(prev => {
+      const newValue = currentScrollTop < lastScrollTop.current;
+      return prev !== newValue ? newValue : prev;
+    });
+
+    lastScrollTop.current = currentScrollTop;
+
+    clearTimeout(headerTimeoutRef.current);
+    headerTimeoutRef.current = setTimeout(() => {
+      setIsHeaderVisible(false);
+    }, 10000);
+  }, []);
+
+  // Optimized resize handler
+  useEffect(() => {
+    const handleResize = () => {
+      clearTimeout(resizeTimeoutRef.current);
+      resizeTimeoutRef.current = setTimeout(() => {
+        const wasMobile = isMobileRef.current;
+        isMobileRef.current = window.innerWidth <= 768;
+
+        if (wasMobile !== isMobileRef.current && isMobileRef.current) {
+          setIsHeaderVisible(false);
+        }
+      }, 150);
+    };
+
+    window.addEventListener('resize', handleResize, { passive: true });
+
+    // Initial check
+    isMobileRef.current = window.innerWidth <= 768;
+    if (isMobileRef.current) {
+      setIsHeaderVisible(false);
+    }
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      clearTimeouts();
+    };
+  }, [clearTimeouts]);
+
+  // Memoized context value
   const contextValue = useMemo(() => ({
     theme,
     setTheme,
@@ -146,7 +206,10 @@ export const EditorProvider: React.FC<{
     handleThemeChange,
     isJoinModalOpen,
     sessionStats,
-    setSessionStats
+    setSessionStats,
+    isHeaderVisible,
+    setIsHeaderVisible,
+    handleHeaderVisibility,
   }), [
     theme,
     cursorPosition,
@@ -157,7 +220,8 @@ export const EditorProvider: React.FC<{
     initializeSession,
     isJoinModalOpen,
     sessionStats,
-    setSessionStats
+    isHeaderVisible,
+    handleHeaderVisibility,
   ]);
 
 
@@ -176,6 +240,6 @@ export const EditorProvider: React.FC<{
     </EditorContext.Provider>
   );
 };
-
 // Remove the useEditor hook and add this export
 export { EditorContext };
+

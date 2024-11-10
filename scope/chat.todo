@@ -10,12 +10,20 @@
 [x] Maintain the lost chat to both users. Offline chat should get recovered when any of the user is offline
 [x] Create a landing page for anonymous chatting
 [x] Sync chat of session in case of  I went offline
+[x] Accessible UI, bottom widget can be hidden on mobile
+
 [] Show if user is typing
+[x] Show sent receipt
 [] Show read and delivery receipt
 [] Add offline message queue of editor, chat and collaboration
 [] User can initiate an anonymous chat or join the existing chat
 [] Enter their name or use the default userName as fullName
 [] Add session validity of 15 day and remove after a certain period, if no activity
 
-[-] Accessible UI, bottom widget can be hidden on mobile
-[-] Sent, Delivered and Read Receipt on chat leafs
+[] Move active users to the top of the list of chat banner
+
+
+
+
+
+
