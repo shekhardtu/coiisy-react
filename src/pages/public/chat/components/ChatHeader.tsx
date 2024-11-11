@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import React, { useContext, useEffect } from "react";
+import React, { useContext } from "react";
 import { ChatStatus } from "./chat.types";
 interface ChatHeaderProps {
   status: ChatStatus["status"]
@@ -29,15 +29,10 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
   status,
   className,
 }) => {
+
   const editorContext = useContext(EditorContext)
   const { sessionId } = useWebSocket()
-
-
-
   const { activeUsers } = useOnlineUsers({ minutes: 120, sessionId })
-
-
-
 
 
 
