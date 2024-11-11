@@ -16,7 +16,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { Separator } from "@/components/ui/separator";
-import { Share2 } from "lucide-react";
+import { useWebSocket } from "@/contexts/WebSocketContext";
+import { Loader2, Share2 } from "lucide-react";
 import UserAvatars from "../../coEditor/components/UsersAvatar";
 import { EditorContext } from "../../coEditor/contexts/Editor.context";
 import { useOnlineUsers } from "../../coEditor/hooks/useOnlineUsers";
@@ -27,7 +28,16 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
   className,
 }) => {
   const editorContext = useContext(EditorContext)
-  const { users } = useOnlineUsers()
+  const { sessionId } = useWebSocket()
+
+
+
+  const { activeUsers } = useOnlineUsers({ minutes: 120, sessionId })
+
+
+
+
+
 
   if (!editorContext) {
     throw new Error("EditorLayoutContent must be used within EditorProvider")
@@ -50,7 +60,14 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
         <div className="container flex min-h-10 max-w-screen-2xl items-center justify-between px-4 gap-2">
           <div className="flex items-center gap-2 justify-between  ">
             <div className="flex items-center gap-3 ">
-              <UserAvatars users={users} size="sm" />
+              {activeUsers.length > 0 ? (
+                <UserAvatars users={activeUsers} size="sm" />
+              ) : (
+                <div className="h-6 w-6 bg-muted rounded-full flex items-center justify-center">
+                  {/* Progress loader */}
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                </div>
+              )}
             </div>
             <Separator orientation="vertical" className="h-6 mx-2" />
             <div className="flex items-center gap-2">
