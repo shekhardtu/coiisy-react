@@ -65,7 +65,7 @@ const EditorLayoutContent: React.FC<{ existingSessionId: string | undefined }> =
       >
         <EditorHeader onThemeChange={handleThemeChange} theme={theme} />
       </div>
-      <main className="flex-1 relative">
+      <main className="h-auto">
         <EditorErrorBoundary>
           <Suspense fallback={
             <div className="flex items-center justify-center h-full">
