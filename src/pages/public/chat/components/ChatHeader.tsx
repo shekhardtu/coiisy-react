@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import React, { useContext } from "react";
+import React, { useContext, useEffect } from "react";
 import { ChatStatus } from "./chat.types";
 interface ChatHeaderProps {
   status: ChatStatus["status"]
@@ -17,7 +17,9 @@ import {
 
 import { Separator } from "@/components/ui/separator";
 import { useWebSocket } from "@/contexts/WebSocketContext";
+
 import { Loader2, Share2 } from "lucide-react";
+
 import UserAvatars from "../../coEditor/components/UsersAvatar";
 import { EditorContext } from "../../coEditor/contexts/Editor.context";
 import { useOnlineUsers } from "../../coEditor/hooks/useOnlineUsers";
@@ -60,6 +62,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
         <div className="container flex min-h-10 max-w-screen-2xl items-center justify-between px-4 gap-2">
           <div className="flex items-center gap-2 justify-between  ">
             <div className="flex items-center gap-3 ">
+
               {activeUsers.length > 0 ? (
                 <UserAvatars users={activeUsers} size="sm" />
               ) : (
@@ -68,6 +71,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
                   <Loader2 className="h-4 w-4 animate-spin" />
                 </div>
               )}
+
             </div>
             <Separator orientation="vertical" className="h-6 mx-2" />
             <div className="flex items-center gap-2">
