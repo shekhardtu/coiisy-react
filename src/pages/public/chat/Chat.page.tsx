@@ -53,7 +53,9 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
   }, [isJoinModalOpen])
 
   useEffect(() => {
-    setSessionId(sessionId || null)
+    if (sessionId) {
+      setSessionId(sessionId)
+    }
   }, [sessionId, setSessionId])
 
   useEffect(() => {

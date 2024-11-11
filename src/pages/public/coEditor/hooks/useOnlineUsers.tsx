@@ -1,21 +1,51 @@
 import { useWebSocket } from "@/contexts/WebSocketContext";
+import { local } from "@/lib/utils";
 import { WS_MESSAGE_TYPES } from "@/lib/webSocket.config";
-import { useEffect, useState } from "react";
+import { isAfter, parseISO, subMinutes } from 'date-fns';
+import { useCallback, useEffect, useState } from "react";
 import { OnlineUserInterface, ServerUserDisconnectedInterface, ServerUserJoinedSessionInterface } from "../components/Editor.types";
 
-const STORAGE_KEY = 'online_users';
+interface UseOnlineUsersProps {
+  minutes?: number
+  sessionId: string
+}
 
-export const useOnlineUsers = (minutes: number = 30) => {
+export const useOnlineUsers = ({ minutes = 120, sessionId }: UseOnlineUsersProps) => {
+
+
+
+  const STORAGE_KEY = sessionId
   const [userHistory, setUserHistory] = useState<OnlineUserInterface[]>(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
+
+    const stored = local("json", STORAGE_KEY).get('online_users');
+    return stored ? stored : [];
   });
 
+
+  const [activeUsers, setActiveUsers] = useState<OnlineUserInterface[]>([]);
+
+
+
+  const getActiveUsers = useCallback((userHistory: OnlineUserInterface[]) => {
+
+    const now = new Date();
+    const lastActive = subMinutes(now, minutes);
+    return userHistory.filter((user) => {
+      const lastSeenAtDate = parseISO(user.lastSeenAt as string);
+      return isAfter(lastSeenAtDate, lastActive);
+    });
+  }, [minutes]);
+
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(userHistory));
-  }, [userHistory]);
+    if (!sessionId) {
+      return
+    }
+    local("json", STORAGE_KEY).set('online_users', userHistory);
+    setActiveUsers(getActiveUsers(userHistory));
+  }, [userHistory, sessionId, STORAGE_KEY, getActiveUsers]);
 
   const { subscribe } = useWebSocket();
+
 
   useEffect(() => {
     const unsubscribeUserJoined = subscribe(
@@ -77,7 +107,15 @@ export const useOnlineUsers = (minutes: number = 30) => {
     };
   }, [minutes, subscribe]);
 
+  if (!sessionId) {
+    return {
+      activeUsers: [],
+      users: [],
+    }
+  }
+
   return {
+    activeUsers,
     users: userHistory,
   };
 };

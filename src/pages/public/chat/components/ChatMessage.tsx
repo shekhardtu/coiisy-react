@@ -1,3 +1,4 @@
+import { useWebSocket } from '@/contexts/WebSocketContext';
 import { formatTimestamp } from '@/lib/utils';
 import { Check, CheckCheck, Clock } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
@@ -12,7 +13,8 @@ const ChatMessage = React.memo(({ message, currentUser, isNewMessage = false, pr
   isNewMessage?: boolean,
   previousMessage?: ChatMessageInterface
 }) => {
-  const { users } = useOnlineUsers();
+  const { sessionId } = useWebSocket()
+  const { users } = useOnlineUsers({ minutes: 120, sessionId: sessionId });
   const [user, setUser] = useState<OnlineUserInterface>();
 
   useEffect(() => {

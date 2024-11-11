@@ -42,8 +42,8 @@ interface WebSocketContextType {
     callback: MessageHandler<T>
   ) => () => void;
   userJoinedSession: (message: ClientUserJoinedSessionInterface) => void;
-  sessionId: string | null;
-  setSessionId: (sessionId: string | null) => void;
+  sessionId: string;
+  setSessionId: (sessionId: string) => void;
   currentUser: CurrentUserInterface | null;
   setCurrentUser: (currentUser: CurrentUserInterface | null) => void;
   sendAuthMessage: (message: AuthMessageInterface) => void;
@@ -71,7 +71,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   const stateRef = useRef<WebSocketState>({ reconnectCount: 0 });
   const isConnectingRef = useRef<boolean>(false);
   const [currentUser, setCurrentUser] = useState<CurrentUserInterface | null>(null);
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string>("");
   const [serverAvailable, setServerAvailable] = useState(true);
 
 
@@ -139,7 +139,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     }
   }, []);
 
-  const setupPingInterval = useCallback((ws: WebSocket , currentUser: CurrentUserInterface, sessionId: string) => {
+  const setupPingInterval = useCallback((ws: WebSocket, currentUser: CurrentUserInterface, sessionId: string) => {
     clearPingInterval(); // Clear any existing interval firs  t
 
     if (!currentUser || !sessionId) {
@@ -156,6 +156,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
           createdAt: getCurrentTimeStamp()
         };
         ws.send(JSON.stringify(pingMessage));
+      } else {
+        disconnect();
       }
     }, wsConfig.pingInterval);
   }, []);
@@ -199,7 +201,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   };
 
   const tryConnect = useCallback(() => {
-    if (isConnectingRef.current || status === 'connected' ) {
+    if (isConnectingRef.current || status === 'connected') {
       log('Connection already in progress or connected');
       return;
     }
@@ -284,8 +286,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
         }
 
         if (wsConfig.enableStartupAutoConnect &&
-            stateRef.current.reconnectCount < wsConfig.maxReconnectAttempts &&
-            serverAvailable) {
+          stateRef.current.reconnectCount < wsConfig.maxReconnectAttempts &&
+          serverAvailable) {
           const delay = calculateBackoffDelay();
           reconnectTimeoutRef.current = setTimeout(tryConnect, delay);
         }
@@ -304,7 +306,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
       setStatus('disconnected');
       isConnectingRef.current = false;
     }
-  }, [status, clearAllTimeouts, url, setupPingInterval,  sessionId, sendAuthMessage, serverAvailable]);
+  }, [status, clearAllTimeouts, url, setupPingInterval, sessionId, sendAuthMessage, serverAvailable]);
 
   const disconnect = useCallback(() => {
     log('Disconnecting...');

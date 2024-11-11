@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import React, { useContext } from "react";
+import React, { useContext, useEffect } from "react";
 import { ChatStatus } from "./chat.types";
 interface ChatHeaderProps {
   status: ChatStatus["status"]
@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { Separator } from "@/components/ui/separator";
+import { useWebSocket } from "@/contexts/WebSocketContext";
 import { Share2 } from "lucide-react";
 import UserAvatars from "../../coEditor/components/UsersAvatar";
 import { EditorContext } from "../../coEditor/contexts/Editor.context";
@@ -27,7 +28,18 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
   className,
 }) => {
   const editorContext = useContext(EditorContext)
-  const { users } = useOnlineUsers()
+  const { sessionId } = useWebSocket()
+
+
+
+  const { activeUsers } = useOnlineUsers({ minutes: 120, sessionId })
+
+
+  useEffect(() => {
+    console.log("activeUsers", activeUsers)
+  }, [activeUsers])
+
+
 
   if (!editorContext) {
     throw new Error("EditorLayoutContent must be used within EditorProvider")
@@ -50,7 +62,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
         <div className="container flex min-h-10 max-w-screen-2xl items-center justify-between px-4 gap-2">
           <div className="flex items-center gap-2 justify-between  ">
             <div className="flex items-center gap-3 ">
-              <UserAvatars users={users} size="sm" />
+              <UserAvatars users={activeUsers} size="sm" />
             </div>
             <Separator orientation="vertical" className="h-6 mx-2" />
             <div className="flex items-center gap-2">
