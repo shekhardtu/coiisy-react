@@ -1,7 +1,8 @@
 :root {
   --canvas: #fff;
   --canvastext: #000;
-  --compose-height: 50px;
+  --compose-height: 72px;
+  --header-height: auto;
   color-scheme: dark light;
 }
 
@@ -24,37 +25,41 @@ html {
 }
 
 body {
-  padding: 1rem;
+
   font-family: system-ui, sans-serif;
   height: 100%;
   overflow: hidden;
 }
 
 
-.container {
+.chat_container {
   height: 100%;
   display: grid;
-  gap: 10px 10px;
+
   grid-template:
+    "header" var(--header-height)
     "messages" 1fr
     "compose" var(--compose-height)
     "keyboard" env(keyboard-inset-height, 0px);
 }
 
-.messages {
-  overflow-y: auto;
-  overflow-x: hidden;
-  display: flex;
-  justify-content: center;
-  height: 100%;
+
+.header {
+  border: solid 1px var(--canvastext);
 }
 
+
 .compose {
-  border: solid 1px var(--canvastext);
+
   width: 100%;
   height: var(--compose-height);
 }
 
+
+.messages {
+    scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
 
 ul {
   margin-inline-start: 0;

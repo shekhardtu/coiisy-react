@@ -1,10 +1,10 @@
-import KeyboardAwareFloat from "@/components/keyboard-aware/KeyboardAwareFloat";
 import { useWebSocket } from "@/contexts/WebSocketContext";
 import { cn, getCurrentTimeStamp, local } from "@/lib/utils";
 import { WS_MESSAGE_TYPES } from "@/lib/webSocket.config";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
+import "../cat/style.css";
 import {
   AuthMessageInterface,
   ChatMessageInterface,
@@ -16,6 +16,13 @@ import { CurrentUserInterface } from "./components/chat.types";
 import ChatHeader from "./components/ChatHeader";
 import ChatInput from "./components/ChatInput";
 import ChatMessages from "./components/ChatMessages";
+
+interface NavigatorWithVirtualKeyboard extends Navigator {
+  virtualKeyboard?: {
+    show: () => void
+    overlaysContent: boolean
+  }
+}
 
 export interface ChatPageProps {
   onSendMessage: (message: string) => void
@@ -42,9 +49,13 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
     local("json", "key").get(`sessionIdentifier-${sessionId}`) || {}
   const currentUser: CurrentUserInterface = guestIdentifier
 
-  const [keyboardVisible, setKeyboardVisible] = useState(true)
-
-  const [keyboardHeight, setKeyboardHeight] = useState(0)
+  // Virtual Keyboard setup
+  useEffect(() => {
+    const virtualKeyboard = (navigator as NavigatorWithVirtualKeyboard)
+      .virtualKeyboard
+    if (!virtualKeyboard) return
+    virtualKeyboard.overlaysContent = true
+  }, [])
 
   useEffect(() => {
     if (!isJoinModalOpen) {
@@ -217,100 +228,12 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
     }
   }, [])
 
-  useEffect(() => {
-    // Initial viewport dimensions
-    let initialHeight = window.innerHeight
-    const MIN_KEYBOARD_HEIGHT = 150
-    const VIEWPORT_UPDATE_DEBOUNCE = 100
-
-    let resizeTimeout: NodeJS.Timeout | null = null
-
-    const handleResize = () => {
-      // Clear existing timeout to debounce rapid updates
-      if (resizeTimeout) {
-        clearTimeout(resizeTimeout)
-      }
-
-      resizeTimeout = setTimeout(() => {
-        // Ensure visualViewport is supported
-        if (!window.visualViewport) {
-          const newHeight = window.innerHeight
-          const heightDiff = initialHeight - newHeight
-
-          setKeyboardVisible(heightDiff > MIN_KEYBOARD_HEIGHT)
-          setKeyboardHeight(heightDiff > MIN_KEYBOARD_HEIGHT ? heightDiff : 0)
-          return
-        }
-
-        // Use visualViewport when available
-        const newViewportHeight = window.visualViewport.height
-        const heightDiff = Math.abs(initialHeight - newViewportHeight)
-        const isKeyboard = heightDiff > MIN_KEYBOARD_HEIGHT
-
-        // Update state only if there's a significant change
-        setKeyboardVisible(isKeyboard)
-        setKeyboardHeight((prev) => {
-          const newHeight = isKeyboard ? heightDiff : 0
-          return Math.abs(prev - newHeight) > 1 ? newHeight : prev
-        })
-      }, VIEWPORT_UPDATE_DEBOUNCE)
-    }
-
-    // Handle orientation changes
-    const handleOrientationChange = () => {
-      // Reset initial height after orientation change
-      setTimeout(() => {
-        initialHeight = window.innerHeight
-        handleResize()
-      }, 300) // Wait for orientation change to complete
-    }
-
-    // Handle page visibility changes
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        initialHeight = window.innerHeight
-        handleResize()
-      }
-    }
-
-    // Add event listeners
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener("resize", handleResize)
-      window.visualViewport.addEventListener("scroll", handleResize)
-    } else {
-      window.addEventListener("resize", handleResize)
-    }
-
-    window.addEventListener("orientationchange", handleOrientationChange)
-    document.addEventListener("visibilitychange", handleVisibilityChange)
-
-    // Initial setup
-    handleResize()
-
-    // Cleanup
-    return () => {
-      if (resizeTimeout) {
-        clearTimeout(resizeTimeout)
-      }
-
-      if (window.visualViewport) {
-        window.visualViewport.removeEventListener("resize", handleResize)
-        window.visualViewport.removeEventListener("scroll", handleResize)
-      } else {
-        window.removeEventListener("resize", handleResize)
-      }
-
-      window.removeEventListener("orientationchange", handleOrientationChange)
-      document.removeEventListener("visibilitychange", handleVisibilityChange)
-    }
-  }, []) // Empty dependency array since we don't need any external values
-
   const handleSendMessage = (messageContent: string) => {
-    if (!messageContent) return
-    if (!currentUser) return
-    const messageId = uuidv4() // Generate unique ID for the message
+    if (!messageContent || !currentUser) return
+
+    const messageId = uuidv4()
     const messageData: ChatMessageInterface = {
-      messageId, // Add this to your interface if not already present
+      messageId,
       type: WS_MESSAGE_TYPES.CLIENT_CHAT,
       sessionId: sessionId || "",
       userId: currentUser.userId,
@@ -328,45 +251,64 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
     onSendMessage(messageContent)
   }
 
-  return (
-    <div className="flex flex-col h-[100dvh] relative">
-      <div
-        className={cn(
-          "transition-transform duration-300 fixed top-0 left-0 right-0 z-50",
-          isHeaderVisible ? "-translate-y-full z-auto" : "translate-y-0"
-        )}
-      >
-        <KeyboardAwareFloat
-          keyboardVisible={keyboardVisible}
-          keyboardHeight={keyboardHeight}
-        >
-          <ChatHeader
-            status={status}
-            tryConnect={tryConnect}
-            className="flex-none border-b border-border"
-          />
-        </KeyboardAwareFloat>
+  // Add viewport height adjustment effect
+  useEffect(() => {
+    const setViewportHeight = () => {
+      document.documentElement.style.setProperty(
+        "--100vh",
+        `${window.innerHeight}px`
+      )
+    }
 
-      </div>
-      <div className="flex-1 overflow-hidden relative">
+    // Set initial height
+    setViewportHeight()
+
+    // Debounced resize handler
+    let timeoutId: NodeJS.Timeout
+    const handleResize = () => {
+      clearTimeout(timeoutId)
+      timeoutId = setTimeout(setViewportHeight, 100)
+    }
+
+    window.addEventListener("resize", handleResize)
+
+    // Cleanup
+    return () => {
+      window.removeEventListener("resize", handleResize)
+    }
+  }, [])
+
+  return (
+    <div className="chat_container" role="main" aria-label="Chat interface">
+      <ChatHeader
+        status={status}
+        tryConnect={tryConnect}
+        className={cn(
+          "flex-none border-b border-border header top-0 left-0 right-0 z-50",
+          isHeaderVisible ? "-translate-y-full" : "translate-y-0 "
+        )}
+      />
+
+      <div
+        ref={chatContainerRef}
+        className="messages overflow-y-scroll"
+        role="log"
+        aria-live="polite"
+      >
         <ChatMessages
           messages={messages}
           currentUser={currentUser}
-          scrollToBottom={scrollToBottom}
           chatContainerRef={chatContainerRef}
-          keyboardVisible={keyboardVisible}
-          keyboardHeight={keyboardHeight}
-          className="absolute inset-0 overflow-y-auto px-4 pb-[calc(env(keyboard-inset-height,0))]"
+          scrollToBottom={scrollToBottom}
         />
       </div>
-      <div className="flex-none">
-        <ChatInput
-        status={status}
-        onSendMessage={handleSendMessage}
-        keyboardVisible={keyboardVisible}
-          keyboardHeight={keyboardHeight}
-          tryConnect={tryConnect}
 
+      <div className="compose" role="form" aria-label="Message composition">
+        <ChatInput
+          status={status}
+          onSendMessage={handleSendMessage}
+          scrollToBottom={scrollToBottom}
+          tryConnect={tryConnect}
         />
       </div>
     </div>

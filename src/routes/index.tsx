@@ -45,9 +45,7 @@ const publicRoutes = [
       </PublicRoute>
     ),
     children: [
-
       { index: true, element: <ChatLandingPage /> },
-
       // Clear routes
       {
         path: "clear",

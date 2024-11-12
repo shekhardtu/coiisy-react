@@ -9,18 +9,16 @@ interface ChatMessagesProps {
   messages: ChatMessageInterface[];
   currentUser: CurrentUserInterface;
   scrollToBottom: (force?: boolean) => void;
-  keyboardVisible: boolean;
-  keyboardHeight: number;
   chatContainerRef: React.RefObject<HTMLDivElement>;
-  className?: string;
+
 }
 
-const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, currentUser, scrollToBottom, chatContainerRef, keyboardVisible,
-  keyboardHeight, className
+const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, currentUser, scrollToBottom, chatContainerRef,
+
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const windowHeight = useRef(window.innerHeight);
+
 
   const editorContext = useContext(EditorContext);
 
@@ -37,10 +35,7 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, currentUser, scro
   }, [messages, scrollToBottom]);
 
 
-  useEffect(() => {
-    console.log(keyboardVisible, keyboardHeight);
-    console.log(`${windowHeight.current - (keyboardVisible ? (keyboardHeight ) : 120)}px`);
-  }, [keyboardVisible, keyboardHeight]);
+
 
   useEffect(() => {
     const container = chatContainerRef.current;
@@ -48,6 +43,7 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, currentUser, scro
 
     const handleScroll = () => {
       handleHeaderVisibility(container);
+
     };
 
     container.addEventListener('scroll', handleScroll);
@@ -58,11 +54,8 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, currentUser, scro
   }, [chatContainerRef, handleHeaderVisibility]);
 
   return (
-    <div
-      className={cn("h-full", className)}
-      ref={chatContainerRef}
-    >
-      <div className="space-y-3 sm:space-y-4 py-4 mt-10">
+
+      <div className={cn("space-y-3 sm:space-y-4 p-4 mt-10 w-full")}  >
         {messages.length > 0 && messages?.map((msg, index) => (
           <ChatMessage
             key={`${msg.createdAt}-${msg.userId}-${msg.messageId}`}
@@ -74,7 +67,7 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, currentUser, scro
         ))}
         <div ref={messagesEndRef} />
       </div>
-    </div>
+
   );
 };
 

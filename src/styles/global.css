@@ -5,11 +5,7 @@
 
 #root {
   @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
-    font-synthesis: none;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "rlig" 1, "calt" 1;
   font-family: var(--font-sans);
   height: 100%;
 }
@@ -21,6 +17,8 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+
+
     --background: 0 0% 100%;
     --foreground: 0 0% 3.9%;
 
@@ -209,6 +207,27 @@
 
 
 .dark [data-dialog-content] {
-  background: rgba(0, 0, 0, 0.2) !important;
-  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  --dialog-bg-opacity: 0.2;
+  --dialog-border-opacity: 0.05;
+  background: rgb(0 0 0 / var(--dialog-bg-opacity)) !important;
+  border: 1px solid rgb(255 255 255 / var(--dialog-border-opacity)) !important;
+
+}
+
+[data-dialog-content] {
+  @apply border-none shadow-lg;
+  background: rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(10px) !important;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  animation: modal-in 0.4s ease-out;
+}
+
+
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --canvas: #000;
+    --canvastext: #fff;
+  }
 }
