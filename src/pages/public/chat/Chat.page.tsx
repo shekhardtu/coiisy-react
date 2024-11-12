@@ -31,10 +31,11 @@ export interface ChatPageProps {
 const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
   const [messages, setMessages] = useState<ChatMessageInterface[]>([])
 
+
   const chatContainerRef = useRef<HTMLDivElement>(null)
 
   const { sessionId } = useParams()
-  const { isJoinModalOpen, isHeaderVisible } = useEditorContext()
+  const { isJoinModalOpen } = useEditorContext()
   const {
     status,
     tryConnect,
@@ -257,7 +258,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
       document.documentElement.style.setProperty(
         "--100vh",
         `${window.innerHeight}px`
-      )
+      );
     }
 
     // Set initial height
@@ -278,20 +279,23 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
     }
   }, [])
 
+
+
+
+
   return (
     <div className="chat_container" role="main" aria-label="Chat interface">
       <ChatHeader
         status={status}
         tryConnect={tryConnect}
         className={cn(
-          "flex-none border-b border-border header top-0 left-0 right-0 z-50",
-          isHeaderVisible ? "-translate-y-full" : "translate-y-0 "
+          "flex-none border-b border-border header top-0 left-0 right-0 z-50 ",
         )}
       />
 
       <div
         ref={chatContainerRef}
-        className="messages overflow-y-scroll"
+        className={`messages overflow-y-scroll`}
         role="log"
         aria-live="polite"
       >
