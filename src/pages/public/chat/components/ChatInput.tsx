@@ -6,13 +6,13 @@ import { ChatStatus } from './chat.types';
 interface ChatInputProps {
   status: ChatStatus['status'];
   onSendMessage: (message: string) => void;
-  keyboardVisible: boolean;
-  keyboardHeight: number;
+  scrollToBottom?: () => void;
+
   tryConnect: () => void;
 
 }
 
-  const ChatInput: React.FC<ChatInputProps> = ({ status, onSendMessage, keyboardVisible, tryConnect }) => {
+  const ChatInput: React.FC<ChatInputProps> = ({ status, onSendMessage,  tryConnect }) => {
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -23,6 +23,9 @@ interface ChatInputProps {
     onSendMessage(messageContent);
     inputRef.current.value = "";
   };
+
+
+
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== 'Enter') return;
@@ -49,8 +52,7 @@ interface ChatInputProps {
       )}
     <div
       className={cn(
-        "bg-background p-3 sm:p-4 w-full border-t border-border sticky bottom-0 transition-all duration-800",
-        keyboardVisible ? 'bottom-0 left-0 right-0 mb-[env(keyboard-inset-height,0)] pb-16':
+        "bg-background p-3 sm:p-4 w-full border-t border-border sticky bottom-8 transition-all duration-800",
         "z-40 flex-none",
         )}
     >
@@ -66,11 +68,6 @@ interface ChatInputProps {
             type="text"
             ref={inputRef}
             onKeyDown={handleKeyPress}
-            onBlur={() => {
-              if (keyboardVisible) {
-                inputRef.current?.blur();
-              }
-            }}
             placeholder={status === 'connected' ? "Type a message..." : "Connecting to chat..."}
             aria-label="Chat message"
             className="w-full px-4 py-2.5 text-base bg-input text-foreground rounded-full
@@ -112,3 +109,5 @@ interface ChatInputProps {
 };
 
 export default ChatInput;
+
+

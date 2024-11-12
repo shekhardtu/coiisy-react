@@ -55,17 +55,17 @@ const EditorLayoutContent: React.FC<{ existingSessionId: string | undefined }> =
 
 
   return (
-    <div className="flex flex-col h-[100dvh] relative">
+    <div className="flex flex-col h-full relative ">
 
       <div
         className={cn(
-          "transition-transform duration-300 fixed top-0 left-0 right-0 z-50",
-          isHeaderVisible ? 'translate-y-0 ' : '-translate-y-full'
+          "transition-transform duration-300 fixed top-0 left-0 right-0 z-50 ",
+          isHeaderVisible ? 'translate-y-0' : '-translate-y-full'
         )}
       >
         <EditorHeader onThemeChange={handleThemeChange} theme={theme} />
       </div>
-      <main className="h-auto">
+      <main className="h-full">
         <EditorErrorBoundary>
           <Suspense fallback={
             <div className="flex items-center justify-center h-full">

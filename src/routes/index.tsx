@@ -1,6 +1,7 @@
 import AuthenticationLayout from "@/layouts/AuthenticationLayout";
 import { local } from "@/lib/utils";
 import Identifier from "@/pages/public/Identifier";
+import CatPage from "@/pages/public/cat/index";
 import ChatLandingPage from "@/pages/public/chat/Chat.index";
 import ClearLayout from "@/pages/public/clear/Clear.layout";
 import ClearSession from "@/pages/public/clear/Clear.page";
@@ -33,6 +34,10 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
 
 const publicRoutes = [
   {
+    path: "/cat",
+    element: <CatPage />,
+  },
+  {
     path: "/",
     element: (
       <PublicRoute>
@@ -41,7 +46,6 @@ const publicRoutes = [
     ),
     children: [
       { index: true, element: <ChatLandingPage /> },
-
       // Clear routes
       {
         path: "clear",
