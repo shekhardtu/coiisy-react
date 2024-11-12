@@ -3,6 +3,16 @@
 @tailwind utilities;
 
 
+#root {
+  @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  font-family: var(--font-sans);
+  height: 100%;
+}
 
 @layer base {
   :root {
@@ -145,7 +155,7 @@
 }
 
 
-/* Dialog and Modal Styles */
+
 [data-dialog-overlay] {
   @apply bg-background/80;
   backdrop-filter: blur(8px) !important;
@@ -161,7 +171,7 @@
   animation: modal-in 0.4s ease-out;
 }
 
-/* Animation Keyframes */
+
 @keyframes modal-in {
   from {
     opacity: 0;
@@ -191,13 +201,13 @@
   }
 }
 
-/* Animation Classes */
+
 .animate-gradient-xy {
   animation: gradient-xy 8s ease infinite;
   background-size: 200% 200%;
 }
 
-/* Dark mode adjustments */
+
 .dark [data-dialog-content] {
   background: rgba(0, 0, 0, 0.2) !important;
   border: 1px solid rgba(255, 255, 255, 0.05) !important;
