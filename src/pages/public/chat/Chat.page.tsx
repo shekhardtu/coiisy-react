@@ -1,3 +1,4 @@
+import { useViewport } from "@/contexts/Viewport.context";
 import { useWebSocket } from "@/contexts/WebSocketContext";
 import { cn, getCurrentTimeStamp, local } from "@/lib/utils";
 import { WS_MESSAGE_TYPES } from "@/lib/webSocket.config";
@@ -45,6 +46,8 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
     sendAuthMessage,
     userJoinedSession,
   } = useWebSocket()
+
+  const { keyboardVisible, isKeyboardSupported } = useViewport()
 
   const { guestIdentifier } =
     local("json", "key").get(`sessionIdentifier-${sessionId}`) || {}
@@ -289,7 +292,8 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
         status={status}
         tryConnect={tryConnect}
         className={cn(
-          "flex-none border-b border-border header top-0 left-0 right-0 z-50 ",
+          "flex-none border-b border-border header top-0 left-0 right-0 z-50",
+          `${keyboardVisible && !isKeyboardSupported && "mb-[env(keyboard-inset-height,0)] fixed"}`
         )}
       />
 
