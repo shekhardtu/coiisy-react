@@ -5,6 +5,7 @@ import { ChatMessageInterface } from '../../coEditor/components/Editor.types';
 import { EditorContext } from '../../coEditor/contexts/Editor.context';
 import { CurrentUserInterface } from './chat.types';
 import ChatMessage from './ChatMessage';
+
 interface ChatMessagesProps {
   messages: ChatMessageInterface[];
   currentUser: CurrentUserInterface;
@@ -13,14 +14,9 @@ interface ChatMessagesProps {
 
 }
 
-const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, currentUser, scrollToBottom, chatContainerRef,
-
-}) => {
+const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, currentUser, scrollToBottom, chatContainerRef }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { keyboardVisible, isKeyboardSupported} = useViewport()
-
-
-
   const editorContext = useContext(EditorContext);
 
   if (!editorContext) {
@@ -34,9 +30,6 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, currentUser, scro
       scrollToBottom(true);
     }
   }, [messages, scrollToBottom]);
-
-
-
 
   useEffect(() => {
     const container = chatContainerRef.current;
@@ -55,22 +48,20 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, currentUser, scro
   }, [chatContainerRef, handleHeaderVisibility]);
 
   return (
-
-    <div className={cn("space-y-3 sm:space-y-4 p-4  w-full",
+    <div className={cn("space-y-3 sm:space-y-4 p-4 w-full",
       `${keyboardVisible && !isKeyboardSupported && "pb-14"}`
-      )}  >
-        {messages.length > 0 && messages?.map((msg, index) => (
-          <ChatMessage
-            key={`${msg.createdAt}-${msg.userId}-${msg.messageId}`}
-            message={msg}
-            currentUser={currentUser}
-            isNewMessage={index === messages.length - 1}
-            previousMessage={index > 0 ? messages[index - 1] : undefined}
-          />
-        ))}
-        <div ref={messagesEndRef} />
-      </div>
-
+    )}>
+      {messages.length > 0 && messages?.map((msg, index) => (
+        <ChatMessage
+          key={`${msg.createdAt}-${msg.userId}-${msg.messageId}`}
+          message={msg}
+          currentUser={currentUser}
+          isNewMessage={index === messages.length - 1}
+          previousMessage={index > 0 ? messages[index - 1] : undefined}
+        />
+      ))}
+      <div ref={messagesEndRef} />
+    </div>
   );
 };
 

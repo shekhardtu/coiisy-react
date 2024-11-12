@@ -143,7 +143,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     clearPingInterval(); // Clear any existing interval firs  t
 
     if (!currentUser || !sessionId) {
-      console.warn('Missing user or sessio  n data for ping setup');
+      console.warn('Missing user or session data for ping setup');
       return;
     }
 

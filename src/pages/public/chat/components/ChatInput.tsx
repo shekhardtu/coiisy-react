@@ -41,8 +41,8 @@ interface ChatInputProps {
     <div className='relative'>
 
         {status === "disconnected" && (
-        <div className="p-2 bg-yellow-500/10 border-b border-yellow-500/20 flex items-center justify-center -translate-y-full  left-0 right-0">
-          <p className="text-xs text-center text-yellow-600 mr-2">
+        <div className="p-2 bg-yellow-500/10 border-b border-yellow-500/20 flex items-center justify-center  top-0 left-0 right-0 -translate-y-full">
+          <p className="text-xs text-center text-yellow-600 mr-2 ">
             Connection lost. Messages won't be delivered until reconnected.
           </p>
           <button

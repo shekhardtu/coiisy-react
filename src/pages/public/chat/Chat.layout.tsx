@@ -4,6 +4,7 @@ import React, { Suspense, useContext, useEffect, useState } from "react";
 import { Outlet, useNavigate, useParams } from "react-router-dom";
 import { v4 as uuidv4 } from 'uuid';
 
+import { MessageWebSocketProvider } from "@/contexts/MessageWebSocket.context";
 import { ViewportProvider } from "@/contexts/Viewport.context";
 import { EditorContext, EditorProvider } from "../coEditor/contexts/Editor.context";
 import useEditorContext from "../coEditor/hooks/useEditor.contexthook";
@@ -56,7 +57,8 @@ const EditorLayoutContent: React.FC<{ existingSessionId: string | undefined }> =
   return (
     <div className="flex flex-col h-full relative overflow-x-hidden overflow-y-hidden">
 
-<ViewportProvider>
+      <ViewportProvider>
+        <MessageWebSocketProvider>
         <EditorErrorBoundary>
           <Suspense fallback={
             <div className="flex items-center justify-center h-full">
@@ -66,6 +68,7 @@ const EditorLayoutContent: React.FC<{ existingSessionId: string | undefined }> =
             <Outlet context={{ theme, sessionId: sessionData?.sessionId }} />
           </Suspense>
         </EditorErrorBoundary>
+        </MessageWebSocketProvider>
       </ViewportProvider>
 
 

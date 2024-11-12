@@ -60,8 +60,10 @@ export const WS_CLIENT_MESSAGE_TYPES = {
   CLIENT_USER_DISCONNECTED: 'client_user_disconnected' as const,
   CLIENT_PING: 'client_ping' as const,
   CLIENT_CHAT: 'client_chat' as const,
-
-
+  CLIENT_CHAT_EDIT: 'client_chat_edit' as const,
+  CLIENT_CHAT_DELETE: 'client_chat_delete' as const,
+  CLIENT_CHAT_REACT: 'client_chat_react' as const,
+  CLIENT_CHAT_REACTION_REMOVE: 'client_chat_reaction_remove' as const,
 }
 
 
@@ -72,6 +74,10 @@ export const WS_SERVER_MESSAGE_TYPES = {
   SERVER_PONG: 'server_pong' as const,
   SERVER_USER_DISCONNECTED: 'server_user_disconnected' as const,
   SERVER_SESSION_MESSAGES: 'server_session_messages' as const,
+  SERVER_CHAT_EDIT: 'server_chat_edit' as const,
+  SERVER_CHAT_DELETE: 'server_chat_delete' as const,
+  SERVER_CHAT_REACT: 'server_chat_react' as const,
+  SERVER_CHAT_REACTION_REMOVE: 'server_chat_reaction_remove' as const,
 }
 
 

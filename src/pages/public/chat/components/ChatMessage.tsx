@@ -1,82 +1,119 @@
-import { useWebSocket } from '@/contexts/WebSocketContext';
-import { formatTimestamp } from '@/lib/utils';
-import { Check, CheckCheck, Clock } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
-import { ChatMessageInterface, OnlineUserInterface } from '../../coEditor/components/Editor.types';
-import UserAvatar from '../../coEditor/components/UserAvatar';
-import { useOnlineUsers } from '../../coEditor/hooks/useOnlineUsers';
-import { CurrentUserInterface } from './chat.types';
+import { Popover, PopoverTrigger } from "@/components/ui/popover";
+import { useWebSocket } from "@/contexts/WebSocketContext";
+import { MoreVertical } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  ChatMessageInterface,
+  OnlineUserInterface,
+} from "../../coEditor/components/Editor.types";
+import UserAvatar from "../../coEditor/components/UserAvatar";
+import { useOnlineUsers } from "../../coEditor/hooks/useOnlineUsers";
+import { CurrentUserInterface } from "./chat.types";
+import ChatMessageActions from "./ChatMessageActions";
+import ChatMessageState from "./ChatMessageState";
 
-const ChatMessage = React.memo(({ message, currentUser, isNewMessage = false, previousMessage }: {
-  message: ChatMessageInterface,
-  currentUser: CurrentUserInterface,
-  isNewMessage?: boolean,
-  previousMessage?: ChatMessageInterface
-}) => {
-  const { sessionId } = useWebSocket()
-  const { users } = useOnlineUsers({ minutes: 120, sessionId: sessionId });
-  const [user, setUser] = useState<OnlineUserInterface>();
+const ChatMessage = React.memo(
+  ({
+    message,
+    currentUser,
+    previousMessage,
+  }: {
+    message: ChatMessageInterface
+    currentUser: CurrentUserInterface
+    isNewMessage?: boolean
+    previousMessage?: ChatMessageInterface
+    }) => {
+    // const longPressHandlers = useLongPress(() => {
+    //   setIsOpen(!isOpen)
+    // })
+    const isOwnMessage = message.userId === currentUser?.userId
+    const [isOpen, setIsOpen] = useState(false)
+    const [user, setUser] = useState<OnlineUserInterface>()
+    const { sessionId } = useWebSocket()
+    const messageBubbleRef = useRef<HTMLDivElement>(null)
+    const { users } = useOnlineUsers({ minutes: 120, sessionId: sessionId })
+    useEffect(() => {
+      setUser(users.find((user) => user.userId === message.userId))
+    }, [message.userId, users])
 
-  useEffect(() => {
-    setUser(users.find((user) => user.userId === message.userId));
-  }, [message.userId, users]);
 
-  return (
-    <div
-      className={`flex ${message.userId === currentUser?.userId ? 'justify-end' : 'justify-start'} mb-1`}
-      style={{
-        animation: isNewMessage ? 'slideUpFade 0.3s ease-out forwards' : undefined,
-        willChange: isNewMessage ? 'transform, opacity' : undefined
-      }}
-    >
-      {message.userId !== currentUser?.userId && (!previousMessage || previousMessage.userId !== message.userId) && (
-        <div className="w-8 h-8 rounded-full bg-gray-300 flex-shrink-0 self-start mr-2">
-            <UserAvatar user={user} />
-        </div>
-      )}
+    return (
       <div
-        className={`max-w-xs w-auto px-4 py-2 rounded-2xl ${
-          message.userId === currentUser?.userId
-            ? 'bg-indigo-600 text-white rounded-tr-sm'
-            : 'bg-gray-100 text-gray-800 rounded-tl-sm'
-        } ${(!previousMessage || previousMessage.userId !== message.userId) ? 'mt-2.5' : ''}`}
-        style={{
-          marginLeft: message.userId !== currentUser?.userId && previousMessage?.userId === message.userId ? '2.5rem' : undefined
-        }}
+        className={`flex ${
+          isOwnMessage ? "justify-end" : "justify-start"
+        } mb-1 relative group`}
       >
-        {(!previousMessage || previousMessage.userId !== message.userId) && (
-          <p className="font-semibold text-xs opacity-70 mb-1">{message.fullName}</p>
-        )}
-        <div className="space-y-1">
-          <p className="text-sm break-words">{message.content}</p>
-          <div className={`flex items-center text-[10px] opacity-70 gap-1 ${
-            message.userId === currentUser?.userId ? 'justify-end' : 'justify-start'
-          }`}>
-            {formatTimestamp(message.createdAt)}
-            {message.userId === currentUser?.userId && (
-              <span className="ml-0.5" title={`Message ${message.state}`}>
-                {message.state === 'sending' &&
-                  <span title="Message sending">
-                    <Clock size={12} />
-                  </span>
-                }
-                {message.state === 'sent' &&
-                  <span title="Message sent">
-                    <Check size={12} />
-                  </span>
-                }
-                {message.state === 'delivered' && (
-                  <span title="Message delivered">
-                    <CheckCheck size={12} />
-                  </span>
-                )}
-              </span>
+        <div
+          className="relative flex items-start gap-2 justify-center "
+          ref={messageBubbleRef}
+
+        >
+          <Popover open={isOpen} onOpenChange={setIsOpen}>
+            <PopoverTrigger asChild>
+              <button
+                className={`opacity-0 group-hover:opacity-100 transition-all duration-200
+                  p-1.5 hover:bg-gray-100 rounded-full absolute top-0
+                  ${isOpen ? "opacity-100 bg-gray-100" : ""}
+                   active:scale-95 z-10`}
+                style={{
+                  [isOwnMessage ? "right" : "left"]: `${
+                    (messageBubbleRef.current?.offsetWidth ?? 0) + 4
+                  }px`,
+                }}
+              >
+                <MoreVertical size={16} className="text-gray-500" />
+              </button>
+            </PopoverTrigger>
+            <ChatMessageActions
+              message={message}
+              isOwnMessage={isOwnMessage}
+              isOpen={isOpen}
+              onClose={() => setIsOpen(false)}
+            />
+          </Popover>
+
+          <div className="flex flex-row gap-1">
+            {message.userId !== currentUser?.userId &&
+            (!previousMessage || previousMessage.userId !== message.userId) ? (
+              <div className="w-8 h-8 rounded-full bg-gray-300 flex-shrink-0 self-start mr-2">
+                <UserAvatar user={user} />
+              </div>
+            ) : (
+              !isOwnMessage && (
+                <div className="w-8 h-8 rounded-full  flex-shrink-0 self-start mr-2" />
+              )
             )}
+            <div className="flex flex-col gap-1">
+              <div
+                onClick={(e) => {
+                  e.stopPropagation()
+                  e.preventDefault()
+                  setIsOpen(!isOpen)
+                }}
+                className={`max-w-xs w-auto px-4 py-2 rounded-2xl ${
+                  isOwnMessage
+                    ? "bg-indigo-600 text-white rounded-tr-sm"
+                    : "bg-gray-100 text-gray-800 rounded-tl-sm"
+                }`}
+              >
+                {message.content}
+              </div>
+              <div
+                className={`
+                 overflow-hidden transition-all duration-200`}
+              >
+                <ChatMessageState
+                  message={message}
+                  currentUser={currentUser}
+                  className="opacity-40 group-hover:opacity-100 transition-all duration-200"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  );
-});
+    )
+  }
+)
 
-export default ChatMessage;
+export default ChatMessage
