@@ -1,10 +1,10 @@
+import { useViewport } from '@/contexts/Viewport.context';
 import { cn } from '@/lib/utils';
 import React, { memo, useContext, useEffect, useRef } from 'react';
 import { ChatMessageInterface } from '../../coEditor/components/Editor.types';
 import { EditorContext } from '../../coEditor/contexts/Editor.context';
 import { CurrentUserInterface } from './chat.types';
 import ChatMessage from './ChatMessage';
-
 interface ChatMessagesProps {
   messages: ChatMessageInterface[];
   currentUser: CurrentUserInterface;
@@ -17,6 +17,7 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, currentUser, scro
 
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { keyboardVisible, isKeyboardSupported} = useViewport()
 
 
 
@@ -55,7 +56,9 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, currentUser, scro
 
   return (
 
-      <div className={cn("space-y-3 sm:space-y-4 p-4 mt-10 w-full")}  >
+    <div className={cn("space-y-3 sm:space-y-4 p-4  w-full",
+      `${keyboardVisible && !isKeyboardSupported && "pb-14"}`
+      )}  >
         {messages.length > 0 && messages?.map((msg, index) => (
           <ChatMessage
             key={`${msg.createdAt}-${msg.userId}-${msg.messageId}`}

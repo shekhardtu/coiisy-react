@@ -1,3 +1,4 @@
+import { useViewport } from '@//contexts/Viewport.context';
 import { cn } from '@/lib/utils';
 import { Send } from "lucide-react";
 import React, { useRef } from 'react';
@@ -11,6 +12,7 @@ interface ChatInputProps {
   tryConnect: () => void;
 
 }
+
 
   const ChatInput: React.FC<ChatInputProps> = ({ status, onSendMessage,  tryConnect }) => {
 
@@ -32,13 +34,14 @@ interface ChatInputProps {
     e.preventDefault();
     handleSendMessage();
   };
+  const { keyboardVisible, isKeyboardSupported } = useViewport();
 
 
     return (
     <div className='relative' >
 
         {status === "disconnected" && (
-        <div className="p-2 bg-yellow-500/10 border-b border-yellow-500/20 flex items-center justify-center">
+        <div className="p-2 bg-yellow-500/10 border-b border-yellow-500/20 flex items-center justify-center absolute top-0 left-0 right-0">
           <p className="text-xs text-center text-yellow-600 mr-2">
             Connection lost. Messages won't be delivered until reconnected.
           </p>
@@ -53,8 +56,9 @@ interface ChatInputProps {
     <div
       className={cn(
         "bg-background p-3 sm:p-4 w-full border-t border-border sticky bottom-8 transition-all duration-800",
-        "z-40 flex-none",
-        )}
+        `${keyboardVisible && !isKeyboardSupported && "mb-[env(keyboard-inset-height,0)] pb-14 fixed bottom-0"}`,
+        "z-40 flex-none"
+      )}
     >
       <form
         onSubmit={(e) => {

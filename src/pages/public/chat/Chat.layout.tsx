@@ -1,10 +1,10 @@
 import EditorErrorBoundary from "@/components/editor/EditorErrorBoundary";
-import { cn, getCurrentTimeStamp } from "@/lib/utils";
+import { getCurrentTimeStamp } from "@/lib/utils";
 import React, { Suspense, useContext, useEffect, useState } from "react";
 import { Outlet, useNavigate, useParams } from "react-router-dom";
 import { v4 as uuidv4 } from 'uuid';
 
-import EditorHeader from "../coEditor/components/EditorHeader";
+import { ViewportProvider } from "@/contexts/Viewport.context";
 import { EditorContext, EditorProvider } from "../coEditor/contexts/Editor.context";
 import useEditorContext from "../coEditor/hooks/useEditor.contexthook";
 const EditorLayoutContent: React.FC<{ existingSessionId: string | undefined }> = ({ existingSessionId }) => {
@@ -14,11 +14,10 @@ const EditorLayoutContent: React.FC<{ existingSessionId: string | undefined }> =
     throw new Error('EditorLayoutContent must be used within EditorProvider');
   }
 
-  const { isHeaderVisible } = editorContext;
+
 
   const {
     theme,
-    handleThemeChange,
     sessionData,
     setSessionData,
     initializeSession
@@ -55,17 +54,9 @@ const EditorLayoutContent: React.FC<{ existingSessionId: string | undefined }> =
 
 
   return (
-    <div className="flex flex-col h-full relative ">
+    <div className="flex flex-col h-full relative overflow-x-hidden overflow-y-hidden">
 
-      <div
-        className={cn(
-          "transition-transform duration-300 fixed top-0 left-0 right-0 z-50 ",
-          isHeaderVisible ? 'translate-y-0' : '-translate-y-full'
-        )}
-      >
-        <EditorHeader onThemeChange={handleThemeChange} theme={theme} />
-      </div>
-      <main className="h-full">
+<ViewportProvider>
         <EditorErrorBoundary>
           <Suspense fallback={
             <div className="flex items-center justify-center h-full">
@@ -75,7 +66,8 @@ const EditorLayoutContent: React.FC<{ existingSessionId: string | undefined }> =
             <Outlet context={{ theme, sessionId: sessionData?.sessionId }} />
           </Suspense>
         </EditorErrorBoundary>
-      </main>
+      </ViewportProvider>
+
 
       </div>
 
