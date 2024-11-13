@@ -12,6 +12,7 @@ interface UseOnlineUsersProps {
 
 export const useOnlineUsers = ({ minutes = 120, sessionId }: UseOnlineUsersProps) => {
 
+  const { status } = useWebSocket()
 
 
   const STORAGE_KEY = sessionId
@@ -20,11 +21,6 @@ export const useOnlineUsers = ({ minutes = 120, sessionId }: UseOnlineUsersProps
     const stored = local("json", STORAGE_KEY).get('online_users');
     return stored ? stored : [];
   });
-
-
-  const [activeUsers, setActiveUsers] = useState<OnlineUserInterface[]>([]);
-
-
 
   const getActiveUsers = useCallback((userHistory: OnlineUserInterface[]) => {
 
@@ -35,6 +31,21 @@ export const useOnlineUsers = ({ minutes = 120, sessionId }: UseOnlineUsersProps
       return isAfter(lastSeenAtDate, lastActive);
     });
   }, [minutes]);
+
+
+
+  const [activeUsers, setActiveUsers] = useState<OnlineUserInterface[]>([]);
+
+  useEffect(() => {
+    if (status === 'connected') {
+      setActiveUsers(getActiveUsers(userHistory));
+    } else if (status === 'disconnected') {
+      setActiveUsers([]);
+    }
+  }, [getActiveUsers, status, userHistory]);
+
+
+
 
   useEffect(() => {
     if (!sessionId) {
