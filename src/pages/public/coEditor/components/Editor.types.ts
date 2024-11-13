@@ -1,4 +1,7 @@
-import { WS_MESSAGE_TYPES } from "@/lib/webSocket.config";
+import { ClientMessageTypes, ServerMessageTypes, WS_MESSAGE_TYPES } from "@/lib/webSocket.config";
+
+
+export type MessageState = 'sending' | 'sent' | 'delivered' | 'failed' | 'deleted' | 'seen' | 'removed' ;
 
 export interface OnlineUserInterface {
   userId: string;
@@ -55,7 +58,7 @@ export interface MessageInterface {
   createdAt?: number | string | Date;
   updatedAt?: number | string | Date;
   messageId?: string;
-  state?: 'sending' | 'sent' | 'delivered' | 'failed' | 'deleted' | 'seen' | undefined;
+  state?: MessageState;
 }
 
 export interface BaseMessage {
@@ -72,16 +75,6 @@ export interface JoinSessionMessageInterface extends BaseMessage {
   createdAt: string | Date;
 }
 
-export interface ChatMessageInterface extends BaseMessage {
-  type: typeof WS_MESSAGE_TYPES.CLIENT_CHAT | typeof WS_MESSAGE_TYPES.SERVER_CHAT;
-  sessionId: string;
-  userId: string;
-  fullName: string;
-  content: string;
-  createdAt: string | Date;
-  messageId: string;
-  state?: 'sending' | 'sent' | 'delivered' | 'failed' | 'deleted' | 'seen' | undefined;
-}
 
 
 export interface ServerChatMessageInterface {
@@ -91,7 +84,7 @@ export interface ServerChatMessageInterface {
   fullName: string;
   content: string;
   createdAt: string | Date;
-  state?: 'sending' | 'sent' | 'delivered' | 'failed' | 'deleted' | 'seen' | undefined;
+  state?: MessageState;
   messageId: string;
 }
 
@@ -153,15 +146,97 @@ export interface ServerPongInterface extends BaseMessage {
 export interface ServerSessionMessagesInterface extends BaseMessage {
   type: typeof WS_MESSAGE_TYPES.SERVER_SESSION_MESSAGES;
   messages: MessageInterface[];
+}
+
+export interface ServerChatEditInterface extends BaseMessage {
+  type: typeof WS_MESSAGE_TYPES.SERVER_CHAT_EDIT;
+  messageId: string;
+  content: string;
 
 }
+
+export interface ClientChatBaseInterface extends BaseMessage {
+  userId: string;
+  fullName: string;
+  sessionId: string;
+  state: MessageState;
+  content: string;
+  messageId: string;
+}
+
+export interface ServerChatBaseInterface extends BaseMessage {
+  userId: string;
+  fullName: string;
+  sessionId: string;
+  state: MessageState;
+  content: string;
+  messageId: string;
+}
+
+export interface ServerChatDeleteInterface extends ServerChatBaseInterface {
+  type: typeof WS_MESSAGE_TYPES.SERVER_CHAT_DELETE;
+}
+
+export interface ServerChatReactInterface extends ServerChatBaseInterface {
+  type: typeof WS_MESSAGE_TYPES.SERVER_CHAT_REACT;
+}
+
+
+export interface ServerChatReactionRemoveInterface extends ServerChatBaseInterface {
+  type: typeof WS_MESSAGE_TYPES.SERVER_CHAT_REACTION_REMOVE;
+}
+
+
+export interface ClientChatEditInterface extends ClientChatBaseInterface {
+  type: typeof WS_MESSAGE_TYPES.CLIENT_CHAT_EDIT;
+  messageId: string;
+  content: string;
+  userId: string;
+  fullName: string;
+}
+
+export interface ClientChatDeleteInterface extends ClientChatBaseInterface {
+  type: typeof WS_MESSAGE_TYPES.CLIENT_CHAT_DELETE;
+  messageId: string;
+}
+
+export interface ClientChatReactInterface extends ClientChatBaseInterface {
+  type: typeof WS_MESSAGE_TYPES.CLIENT_CHAT_REACT;
+  messageId: string;
+
+}
+
+export interface ClientChatReactionRemoveInterface extends ClientChatBaseInterface {
+  type: typeof WS_MESSAGE_TYPES.CLIENT_CHAT_REACTION_REMOVE;
+  messageId: string;
+}
+
+export type ClientChatMessageTypes = ClientMessageTypes;
+export type ServerChatMessageTypes = ServerMessageTypes;
+
+export interface ChatMessageInterface extends BaseMessage {
+  type: ClientMessageTypes | ServerMessageTypes;
+  sessionId: string;
+  userId: string;
+  fullName: string;
+  content: string;
+  createdAt: string | Date;
+  messageId: string;
+  state?: MessageState;
+}
+
+
 
 export type ServerMessage =
   | ServerChatMessageInterface
   | ServerUserJoinedSessionInterface
   | ServerUserDisconnectedInterface
   | ServerPongInterface
-  | ServerSessionMessagesInterface;
+  | ServerSessionMessagesInterface
+  | ServerChatEditInterface
+  | ServerChatDeleteInterface
+  | ServerChatReactInterface
+  | ServerChatReactionRemoveInterface;
 
 export type ClientMessage =
   | ChatMessageInterface
@@ -170,4 +245,8 @@ export type ClientMessage =
   | SystemMessageInterface
   | AuthMessageInterface
   | ClientUserJoinedSessionInterface
-  | ClientUserDisconnectedInterface;
+  | ClientUserDisconnectedInterface
+  | ClientChatEditInterface
+  | ClientChatDeleteInterface
+  | ClientChatReactInterface
+  | ClientChatReactionRemoveInterface;

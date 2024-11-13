@@ -18,7 +18,6 @@ import { getWebSocketURL } from '@/lib/webSocket.config';
 type WebSocketMessage = ClientMessage | ServerMessage;
 // Type guard to check message types
 const isValidMessageType = (data: unknown): data is WebSocketMessage => {
-
   if (typeof data !== 'object' || data === null) return false;
   return 'type' in data && ('createdAt' in data || 'timestamp' in data);
 };
@@ -143,7 +142,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     clearPingInterval(); // Clear any existing interval firs  t
 
     if (!currentUser || !sessionId) {
-      console.warn('Missing user or sessio  n data for ping setup');
+      console.warn('Missing user or session data for ping setup');
       return;
     }
 
@@ -172,6 +171,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 
         return;
       }
+
+      console.log(data.type);
 
       const listeners = listenersRef.current.get(data.type);
       if (listeners) {
@@ -267,7 +268,6 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
         } else {
           console.warn('Missing user or session data on connection');
         }
-
         resetReconnectCount();
       };
 
