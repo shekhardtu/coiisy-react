@@ -1,51 +1,41 @@
+import { useMessageWebSocket } from '@/contexts/MessageWebSocket.context';
 import { useViewport } from '@/contexts/Viewport.context';
 import { cn } from '@/lib/utils';
-import React, { memo, useContext, useEffect, useRef } from 'react';
-import { ChatMessageInterface } from '../../coEditor/components/Editor.types';
-import { EditorContext } from '../../coEditor/contexts/Editor.context';
+import React, { memo, useEffect, useRef } from 'react';
+
+import { WS_MESSAGE_TYPES } from '@/lib/webSocket.config';
 import { CurrentUserInterface } from './chat.types';
 import ChatMessage from './ChatMessage';
-
 interface ChatMessagesProps {
-  messages: ChatMessageInterface[];
   currentUser: CurrentUserInterface;
   scrollToBottom: (force?: boolean) => void;
-  chatContainerRef: React.RefObject<HTMLDivElement>;
-
+  chatContainerRef?: React.RefObject<HTMLDivElement>;
 }
 
-const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, currentUser, scrollToBottom, chatContainerRef }) => {
+const ChatMessages: React.FC<ChatMessagesProps> = ({  currentUser, scrollToBottom,  }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { keyboardVisible, isKeyboardSupported} = useViewport()
-  const editorContext = useContext(EditorContext);
 
-  if (!editorContext) {
-    throw new Error('ChatMessages must be used within EditorProvider');
-  }
+  const { messages, lastMessageAction } = useMessageWebSocket();
 
-  const { handleHeaderVisibility } = editorContext;
+
 
   useEffect(() => {
     if (messages.length > 0) {
-      scrollToBottom(true);
+        switch (lastMessageAction.current) {
+          case WS_MESSAGE_TYPES.SERVER_CHAT_DELETE:
+            break;
+          case WS_MESSAGE_TYPES.SERVER_CHAT:
+            setTimeout(() => scrollToBottom(false), 100);
+            break;
+          case WS_MESSAGE_TYPES.SERVER_SESSION_MESSAGES:
+            setTimeout(() => scrollToBottom(true), 100);
+            break;
+          default:
+            break;
+        }
     }
-  }, [messages, scrollToBottom]);
-
-  useEffect(() => {
-    const container = chatContainerRef.current;
-    if (!container) return;
-
-    const handleScroll = () => {
-      handleHeaderVisibility(container);
-
-    };
-
-    container.addEventListener('scroll', handleScroll);
-
-    return () => {
-      container.removeEventListener('scroll', handleScroll);
-    };
-  }, [chatContainerRef, handleHeaderVisibility]);
+  }, [messages, scrollToBottom, lastMessageAction]);
 
   return (
     <div className={cn("space-y-3 sm:space-y-4 p-4 w-full",
@@ -53,7 +43,7 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, currentUser, scro
     )}>
       {messages.length > 0 && messages?.map((msg, index) => (
         <ChatMessage
-          key={`${msg.createdAt}-${msg.userId}-${msg.messageId}`}
+          key={`${msg.createdAt}-${msg.userId}-${msg.messageId}-${msg.content}`}
           message={msg}
           currentUser={currentUser}
           isNewMessage={index === messages.length - 1}

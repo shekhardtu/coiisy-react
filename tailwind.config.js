@@ -99,12 +99,22 @@ module.exports = {
   					opacity: '1',
   					transform: 'translateY(0)'
   				}
+  			},
+  			'message-remove': {
+  				'0%': { opacity: '1', transform: 'scale(1)' },
+  				'100%': { opacity: '0', transform: 'scale(0.95)' }
+  			},
+  			'message-add': {
+  				'0%': { opacity: '0', transform: 'translateY(5px)' },
+  				'100%': { opacity: '1', transform: 'translateY(0)' }
   			}
   		},
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',
   			'accordion-up': 'accordion-up 0.2s ease-out',
-  			slideUpFade: 'slideUpFade 0.3s ease-out'
+  			slideUpFade: 'slideUpFade 0.3s ease-out',
+  			'message-remove': 'message-remove 0.2s ease-out forwards',
+  			'message-add': 'message-add 0.2s ease-out'
   		}
   	}
   },

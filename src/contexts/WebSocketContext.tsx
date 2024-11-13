@@ -18,7 +18,6 @@ import { getWebSocketURL } from '@/lib/webSocket.config';
 type WebSocketMessage = ClientMessage | ServerMessage;
 // Type guard to check message types
 const isValidMessageType = (data: unknown): data is WebSocketMessage => {
-
   if (typeof data !== 'object' || data === null) return false;
   return 'type' in data && ('createdAt' in data || 'timestamp' in data);
 };
@@ -173,6 +172,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
         return;
       }
 
+      console.log(data.type);
+
       const listeners = listenersRef.current.get(data.type);
       if (listeners) {
         listeners.forEach(listener => listener(data));
@@ -267,7 +268,6 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
         } else {
           console.warn('Missing user or session data on connection');
         }
-
         resetReconnectCount();
       };
 

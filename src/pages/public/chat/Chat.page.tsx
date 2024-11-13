@@ -1,17 +1,10 @@
 import { useViewport } from "@/contexts/Viewport.context";
 import { useWebSocket } from "@/contexts/WebSocketContext";
-import { cn, getCurrentTimeStamp, local } from "@/lib/utils";
+import { cn, local } from "@/lib/utils";
 import { WS_MESSAGE_TYPES } from "@/lib/webSocket.config";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
-import { v4 as uuidv4 } from "uuid";
 import "../cat/style.css";
-import {
-  AuthMessageInterface,
-  ChatMessageInterface,
-  ServerChatMessageInterface,
-  ServerSessionMessagesInterface,
-} from "../coEditor/components/Editor.types";
 import useEditorContext from "../coEditor/hooks/useEditor.contexthook";
 import { CurrentUserInterface } from "./components/chat.types";
 import ChatHeader from "./components/ChatHeader";
@@ -30,7 +23,7 @@ export interface ChatPageProps {
 }
 
 const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
-  const [messages, setMessages] = useState<ChatMessageInterface[]>([])
+
 
 
   const chatContainerRef = useRef<HTMLDivElement>(null)
@@ -40,10 +33,8 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
   const {
     status,
     tryConnect,
-    sendMessage,
-    subscribe,
+
     setSessionId,
-    sendAuthMessage,
     userJoinedSession,
   } = useWebSocket()
 
@@ -73,17 +64,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
     }
   }, [sessionId, setSessionId])
 
-  useEffect(() => {
-    if (currentUser && sessionId) {
-      const authMessage: AuthMessageInterface = {
-        type: WS_MESSAGE_TYPES.CLIENT_AUTH,
-        sessionId,
-        userId: currentUser.userId, // This is
-      }
 
-      sendAuthMessage(authMessage)
-    }
-  }, [currentUser, sendAuthMessage, sessionId])
 
   useEffect(() => {
     if (sessionId && status === "connected" && currentUser?.userId) {
@@ -102,96 +83,10 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
     currentUser?.fullName,
   ])
 
-  const deduplicateMessages = (
-    messages: ChatMessageInterface[]
-  ): ChatMessageInterface[] => {
-    const seen = new Map()
-    return messages.filter((msg) => {
-      if (seen.has(msg.messageId)) {
-        return false
-      }
-      seen.set(msg.messageId, true)
-      return true
-    })
-  }
 
-  useEffect(() => {
-    const unsubscribeSessionReload = subscribe<ServerSessionMessagesInterface>(
-      WS_MESSAGE_TYPES.SERVER_SESSION_MESSAGES,
-      (data) => {
-        setMessages((prevMessages) => {
-          const allMessages = [
-            ...prevMessages,
-            ...data.messages,
-          ] as ChatMessageInterface[]
-          const uniqueMessages = deduplicateMessages(allMessages)
 
-          local("json", "key").set(`sessionIdentifier-${sessionId}`, {
-            guestIdentifier: {
-              ...currentUser,
-              messages: uniqueMessages,
-            },
-          })
 
-          return uniqueMessages
-        })
-      }
-    )
 
-    const unsubscribe = subscribe<ServerChatMessageInterface>(
-      WS_MESSAGE_TYPES.SERVER_CHAT,
-      (message) => {
-        setMessages((prevMessages) => {
-          let newMessages
-          const existingMessageIndex = prevMessages.findIndex(
-            (msg) => msg.messageId === message.messageId
-          )
-
-          if (existingMessageIndex !== -1) {
-            // Update existing message state
-            newMessages = [...prevMessages]
-            newMessages[existingMessageIndex] = {
-              ...message,
-              state: "sent" as const,
-            }
-          } else {
-            // Add new message
-            newMessages = [
-              ...prevMessages,
-              { ...message, state: "sent" as const },
-            ]
-          }
-
-          // Save to localStorage for both cases
-          local("json", "key").set(`sessionIdentifier-${sessionId}`, {
-            guestIdentifier: {
-              ...currentUser,
-              messages: newMessages,
-            },
-          })
-
-          return newMessages
-        })
-      }
-    )
-
-    return () => {
-      unsubscribe()
-      unsubscribeSessionReload()
-    }
-  }, [status, subscribe, sessionId, currentUser])
-
-  useEffect(() => {
-    const sessionData = local("json", "key").get(
-      `sessionIdentifier-${sessionId}`
-    )
-    if (sessionData?.guestIdentifier?.messages) {
-      setMessages(deduplicateMessages(sessionData.guestIdentifier.messages))
-    }
-    return () => {
-      setMessages([])
-    }
-  }, [sessionId])
 
   const scrollToBottom = useCallback((force = false) => {
     if (!chatContainerRef.current) return
@@ -201,9 +96,12 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
     const isNearBottom = scrollHeight - scrollTop - clientHeight < 100
 
     if (isNearBottom || force) {
-      container.scrollTo({
-        top: scrollHeight,
-        behavior: "smooth",
+      // Add a small delay to ensure the last message is fully rendered
+      requestAnimationFrame(() => {
+        container.scrollTo({
+          top: container.scrollHeight,
+          behavior: "smooth",
+        })
       })
     }
   }, [])
@@ -231,29 +129,6 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
       document.head.removeChild(styleSheet)
     }
   }, [])
-
-  const handleSendMessage = (messageContent: string) => {
-    if (!messageContent || !currentUser) return
-
-    const messageId = uuidv4()
-    const messageData: ChatMessageInterface = {
-      messageId,
-      type: WS_MESSAGE_TYPES.CLIENT_CHAT,
-      sessionId: sessionId || "",
-      userId: currentUser.userId,
-      fullName: currentUser.fullName || "",
-      content: messageContent,
-      createdAt: getCurrentTimeStamp(),
-    }
-
-    setMessages((prev) => [
-      ...prev,
-      { ...messageData, state: "sending" as const },
-    ])
-    sendMessage(messageData)
-    scrollToBottom(true)
-    onSendMessage(messageContent)
-  }
 
   // Add viewport height adjustment effect
   useEffect(() => {
@@ -304,7 +179,6 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
         aria-live="polite"
       >
         <ChatMessages
-          messages={messages}
           currentUser={currentUser}
           chatContainerRef={chatContainerRef}
           scrollToBottom={scrollToBottom}
@@ -314,7 +188,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
       <div className="compose" role="form" aria-label="Message composition">
         <ChatInput
           status={status}
-          onSendMessage={handleSendMessage}
+          onMessageSent={onSendMessage}
           scrollToBottom={scrollToBottom}
           tryConnect={tryConnect}
         />

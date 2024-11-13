@@ -62,6 +62,7 @@ export const WS_CLIENT_MESSAGE_TYPES = {
   CLIENT_CHAT: 'client_chat' as const,
   CLIENT_CHAT_EDIT: 'client_chat_edit' as const,
   CLIENT_CHAT_DELETE: 'client_chat_delete' as const,
+  CLIENT_CHAT_REMOVE: 'client_chat_remove' as const,
   CLIENT_CHAT_REACT: 'client_chat_react' as const,
   CLIENT_CHAT_REACTION_REMOVE: 'client_chat_reaction_remove' as const,
 }
@@ -78,8 +79,12 @@ export const WS_SERVER_MESSAGE_TYPES = {
   SERVER_CHAT_DELETE: 'server_chat_delete' as const,
   SERVER_CHAT_REACT: 'server_chat_react' as const,
   SERVER_CHAT_REACTION_REMOVE: 'server_chat_reaction_remove' as const,
+  SERVER_CHAT_REMOVE: 'server_chat_remove' as const,
 }
 
+// Add these new type utilities
+export type ClientMessageTypes = typeof WS_CLIENT_MESSAGE_TYPES[keyof typeof WS_CLIENT_MESSAGE_TYPES];
+export type ServerMessageTypes = typeof WS_SERVER_MESSAGE_TYPES[keyof typeof WS_SERVER_MESSAGE_TYPES];
 
 export const WS_MESSAGE_TYPES = {
   ...WS_CLIENT_MESSAGE_TYPES,

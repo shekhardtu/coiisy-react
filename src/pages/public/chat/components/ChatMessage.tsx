@@ -41,7 +41,8 @@ const ChatMessage = React.memo(
       <div
         className={`flex ${
           isOwnMessage ? "justify-end" : "justify-start"
-        } mb-1 relative group`}
+          } mb-1 relative group`}
+
       >
         <div
           className="relative flex items-start gap-2 justify-center "
@@ -74,13 +75,14 @@ const ChatMessage = React.memo(
 
           <div className="flex flex-row gap-1">
             {message.userId !== currentUser?.userId &&
-            (!previousMessage || previousMessage.userId !== message.userId) ? (
+            (!previousMessage || previousMessage.userId !== message.userId) &&
+            message.state !== "deleted" ? (
               <div className="w-8 h-8 rounded-full bg-gray-300 flex-shrink-0 self-start mr-2">
                 <UserAvatar user={user} />
               </div>
             ) : (
-              !isOwnMessage && (
-                <div className="w-8 h-8 rounded-full  flex-shrink-0 self-start mr-2" />
+              !isOwnMessage && message.state !== "deleted" && (
+                <div className="w-8 h-8 rounded-full flex-shrink-0 self-start mr-2" />
               )
             )}
             <div className="flex flex-col gap-1">
@@ -91,12 +93,14 @@ const ChatMessage = React.memo(
                   setIsOpen(!isOpen)
                 }}
                 className={`max-w-xs w-auto px-4 py-2 rounded-2xl ${
-                  isOwnMessage
+                  message.state === "deleted"
+                    ? "bg-gray-50 text-gray-400 text-sm italic px-2 py-1"
+                    : isOwnMessage
                     ? "bg-indigo-600 text-white rounded-tr-sm"
                     : "bg-gray-100 text-gray-800 rounded-tl-sm"
                 }`}
               >
-                {message.content}
+                {message.state === "deleted" ? "This message was deleted" : message.content}
               </div>
               <div
                 className={`
