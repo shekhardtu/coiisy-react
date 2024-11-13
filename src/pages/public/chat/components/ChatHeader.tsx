@@ -18,7 +18,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { useWebSocket } from "@/contexts/WebSocketContext";
 
-import { Loader2, Share2 } from "lucide-react";
+import { AlertTriangle, Loader2, Share2 } from "lucide-react";
 
 import UserAvatars from "../../coEditor/components/UsersAvatar";
 import { EditorContext } from "../../coEditor/contexts/Editor.context";
@@ -31,7 +31,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
 }) => {
 
   const editorContext = useContext(EditorContext)
-  const { sessionId } = useWebSocket()
+  const { sessionId, tryConnect } = useWebSocket()
   const { activeUsers } = useOnlineUsers({ minutes: 120, sessionId })
 
 
@@ -58,14 +58,20 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
           <div className="flex items-center gap-2 justify-between  ">
             <div className="flex items-center gap-3 ">
 
-              {activeUsers.length > 0 ? (
+              {activeUsers.length > 0 && status === 'connected' ? (
                 <UserAvatars users={activeUsers} size="sm" />
-              ) : (
+              ) : status === 'connected' || status === 'connecting' ? (
                 <div className="h-6 w-6 bg-muted rounded-full flex items-center justify-center">
                   {/* Progress loader */}
                   <Loader2 className="h-4 w-4 animate-spin" />
                 </div>
-              )}
+              ) : <div className="h-6 w-6 bg-muted rounded-full flex items-center justify-center cursor-pointer" title="Click to connect to the chat" onClick={() => {
+                tryConnect()
+              }}>
+                <AlertTriangle className="h-4 w-4" />
+              </div>
+              }
+
 
             </div>
             <Separator orientation="vertical" className="h-6 mx-2" />
