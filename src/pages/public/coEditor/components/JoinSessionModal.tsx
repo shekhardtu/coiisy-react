@@ -2,14 +2,14 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Copy, Users } from "lucide-react";
 import { useEffect, useState } from "react";
-
-
 
 const colorConfigs = [
   {
@@ -133,93 +133,113 @@ export function JoinSessionModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={() => {}} modal={true}>
-      <div className={`fixed inset-0 bg-white/50 ${colorConfig.overlay} backdrop-blur-sm transition-colors duration-300 ease-in-out`} />
+      <div className={`fixed inset-0 ${colorConfig.overlay} backdrop-blur-sm`} />
       <DialogContent
-        className={`sm:max-w-[425px] p-0 overflow-hidden ${colorConfig.glassEffect} transition-all duration-300 gap-0`}
+        className={`
+          mx-auto
+          w-[90%] sm:w-[425px]
+          p-0
+          overflow-hidden
+          ${colorConfig.glassEffect}
+          shadow-lg
+          rounded-2xl
+          gap-0
+        `}
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
         onInteractOutside={(e) => e.preventDefault()}
         closeButton={false}
       >
-        <div className={`p-6 ${colorConfig.background} transition-colors duration-300`}>
+        <div className={`px-4 py-6 sm:p-8 ${colorConfig.background}`}>
           <DialogHeader>
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                <Users className={`w-8 h-8 ${colorConfig.textColor}`} />
+            <DialogTitle className="sr-only">
+              Join Session - {sessionName}
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              Enter your display name to join the collaborative session
+            </DialogDescription>
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-2xl bg-white/30 backdrop-blur-sm flex items-center justify-center">
+                <Users className={`w-7 h-7 sm:w-10 sm:h-10 ${colorConfig.textColor}`} />
               </div>
 
-              <div className="text-center space-y-1.5">
-                <h2 className={`text-2xl font-semibold tracking-tight ${colorConfig.textColor} uppercase`}  onClick={copyToClipboard}>
+              <div className="text-center">
+                <h2
+                  className={`text-lg  sm:text-2xl font-bold mb-2 ${colorConfig.textColor} group cursor-pointer`}
+                  onClick={copyToClipboard}
+                >
                   {sessionName}
-                  <Copy className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <Copy className="ml-2 h-4 w-4 inline-block opacity-0 group-hover:opacity-100 transition-opacity" />
                 </h2>
-                <p className={`text-sm ${colorConfig.textColor} opacity-80`}>
-                  <span className="inline-flex items-center gap-1.5">
-                    <span className="relative flex h-2 w-2">
-                      <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${colorConfig.textColor} opacity-75`}></span>
-                      <span className={`relative inline-flex rounded-full h-2 w-2 ${colorConfig.textColor}`}></span>
-                    </span>
-                    {onlineCount} online • {totalCount} members
+                <div className={`text-sm ${colorConfig.textColor} opacity-80 flex items-center justify-center gap-2`}>
+                  <span className="relative flex h-2 w-2">
+                    <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${colorConfig.textColor} opacity-75`}></span>
+                    <span className={`relative inline-flex rounded-full h-2 w-2 ${colorConfig.textColor}`}></span>
                   </span>
-                </p>
+                  {onlineCount} online • {totalCount} members
+                </div>
               </div>
             </div>
           </DialogHeader>
         </div>
 
-        <div className="p-6 space-y-6 bg-background/95 backdrop-blur-md">
+        <div className="px-4 py-5 sm:p-6 bg-white/95 backdrop-blur-md">
+          <form onSubmit={handleSubmit} className="space-y-4 w-full flex flex-col items-center">
 
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="name" className={`text-sm font-medium ${colorConfig.textColor} `}>
+              <label
+                htmlFor="name"
+                className={`block mb-2 text-sm font-medium ${colorConfig.textColor}`}
+              >
                 Your Display Name
               </label>
-              <Input
-                id="name"
-                placeholder="Enter your name..."
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                className={`
-                  h-11
-                  ${colorConfig.textColor}
-                  bg-white/90
-                  border-2
-                  border-${colorConfig.background.split('-')[1]}-200
-                  hover:border-${colorConfig.background.split('-')[1]}-300
-                  shadow-[0_2px_10px_-2px_rgba(0,0,0,0.1)]
-                  hover:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.15)]
-                  focus:shadow-[0_2px_8px_-1px_rgba(0,0,0,0.15)]
-                  focus:bg-white
-                  focus:outline-none
-                  focus:ring-0
-                  placeholder:text-gray-400
-                  transition-all
-                  duration-200
-                  ease-out
-                  rounded-md
-                  focus-visible:ring-offset-0
-                  focus-visible:ring-${colorConfig.background.split('-')[1]}-200
-                `}
-                autoComplete="name"
-                required
-                minLength={2}
-                maxLength={50}
-                autoFocus
-              />
-            </div>
+              <div className="flex flex-col gap-3 w-full">
+                <Input
+                  id="name"
+                  placeholder="Enter your name..."
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className={`
+                    w-full
+                    h-11
+                    px-4
+                    text-base
+                    ${colorConfig.textColor}
+                    bg-white/90
+                    border
+                    rounded-lg
+                    focus:ring-2
+                    focus:ring-${colorConfig.background.split('-')[1]}-200
+                    focus:border-transparent
+                  `}
+                  autoFocus
+                  required
+                />
+                <Button
+                  type="submit"
+                  className={`
+                    w-full
+                    h-11
+                    ${colorConfig.background}
+                    hover:opacity-90
+                    transition-all
+                    text-base
+                    font-medium
+                    rounded-lg
+                    ${colorConfig.buttonTextColor}
+                  `}
+                  disabled={!fullName.trim() || isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <div className="w-4 h-4 border-2 border-current rounded-full border-t-transparent animate-spin" />
+                      Joining...
+                    </span>
+                  ) : (
+                    "Join Session"
+                  )}
+                </Button>
+              </div>
 
-            <Button
-              type="submit"
-              className={`w-full h-11 ${colorConfig.background} hover:opacity-90 transition-opacity ${colorConfig.buttonTextColor}`}
-              disabled={!fullName.trim() || isSubmitting}
-            >
-              {isSubmitting ? (
-                <span className="animate-pulse">Joining...</span>
-              ) : (
-                "Join Session"
-              )}
-            </Button>
           </form>
         </div>
       </DialogContent>

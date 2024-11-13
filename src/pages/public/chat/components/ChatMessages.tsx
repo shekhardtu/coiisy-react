@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import React, { memo, useEffect, useRef } from 'react';
 
 import { WS_MESSAGE_TYPES } from '@/lib/webSocket.config';
-import { CurrentUserInterface } from './chat.types';
+import { CurrentUserInterface } from '../../coEditor/components/Editor.types';
 import ChatMessage from './ChatMessage';
 interface ChatMessagesProps {
   currentUser: CurrentUserInterface;

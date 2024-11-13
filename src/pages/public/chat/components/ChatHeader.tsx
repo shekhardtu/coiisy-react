@@ -68,7 +68,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
               ) : <div className="h-6 w-6 bg-muted rounded-full flex items-center justify-center cursor-pointer" title="Click to connect to the chat" onClick={() => {
                 tryConnect()
               }}>
-                <AlertTriangle className="h-4 w-4" />
+                <AlertTriangle className="h-4 w-4"  />
               </div>
               }
 

@@ -77,7 +77,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 
 
   const getCurrentUser = useCallback((sessionId: string) => {
-    const sessionData = local("json", "key").get(`sessionIdentifier-${sessionId}`);
+    const sessionData = local("json", sessionId).get(`sessionIdentifier`);
     return sessionData?.guestIdentifier;
   }, []);
 

@@ -63,18 +63,18 @@ const RealTimeEditor: React.FC = () => {
 
   const getSessionData = useCallback((): SessionDataInterface => {
 
-    return local("json", "key").get(`sessionIdentifier-${sessionId}`) || {};
+    return local("json", sessionId).get(`sessionIdentifier`) || {};
 
   }, [sessionId]);
 
 
   const [chatWidth, setChatWidth] = useState<number>(() => {
-    const sessionData = local("json", "key").get(`sessionIdentifier-${sessionId}`);
+    const sessionData = local("json", sessionId).get(`sessionIdentifier`);
     return sessionData?.chatWidth ?? 30;
   });
   const [isDragging, setIsDragging] = useState(false);
   const [chatPosition, setChatPosition] = useState<'side' | 'bottom'>(() => {
-    const sessionData = local("json", "key").get(`sessionIdentifier-${sessionId}`);
+    const sessionData = local("json", sessionId).get(`sessionIdentifier`);
     return sessionData?.chatPosition ?? 'side';
   });
 

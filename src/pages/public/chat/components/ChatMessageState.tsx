@@ -1,7 +1,6 @@
 import { formatTimestamp } from '@/lib/utils';
 import { Check, CheckCheck, Clock } from 'lucide-react';
-import { ChatMessageInterface } from '../../coEditor/components/Editor.types';
-import { CurrentUserInterface } from './chat.types';
+import { ChatMessageInterface, CurrentUserInterface } from '../../coEditor/components/Editor.types';
 
 interface ChatMessageStateProps {
   message: ChatMessageInterface;

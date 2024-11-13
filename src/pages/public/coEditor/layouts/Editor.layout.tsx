@@ -1,5 +1,5 @@
 import EditorErrorBoundary from "@/components/editor/EditorErrorBoundary";
-import { Suspense, useEffect } from "react";
+import { Suspense } from "react";
 import { Outlet } from "react-router-dom";
 import EditorFooter from "../components/EditorFooter";
 import EditorHeader from "../components/EditorHeader";
@@ -13,15 +13,9 @@ const EditorLayoutContent: React.FC = () => {
     cursorPosition,
     isWebSocketConnected,
     sessionData,
-    initializeSession,
   } = useEditorContext();
 
-  // Run initialization only once when component mounts
-  useEffect(() => {
-    if (!sessionData?.guestIdentifier) {
-      initializeSession({ sessionId: sessionData?.sessionId });
-    }
-  }, [sessionData?.guestIdentifier, initializeSession, sessionData?.sessionId]);
+
 
   // Prevent render until we have session data
   if (!sessionData) {

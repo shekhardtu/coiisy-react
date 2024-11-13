@@ -197,7 +197,7 @@ export const getCurrentUser = (sessionId: string | undefined) => {
 
   if (!sessionId) return null
   const sessionData =
-    local("json", "key").get(`sessionIdentifier-${sessionId}`) || {}
+    local("json", sessionId).get(`sessionIdentifier`) || {}
   const { guestIdentifier } = sessionData
   return guestIdentifier
 };
