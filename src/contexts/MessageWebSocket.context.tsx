@@ -210,7 +210,10 @@ export const MessageWebSocketProvider: React.FC<
         const allMessages = [...prevMessages, ...(session.messages || [])] as ChatMessageInterface[]
         const uniqueMessages = deduplicateMessages(allMessages)
 
+        const sessionData = local("json", sessionId).get(`sessionIdentifier`);
+
         local("json", sessionId).set(`sessionIdentifier`, {
+          ...sessionData,
           guestIdentifier: {
             ...currentUser,
             messages: uniqueMessages,
@@ -238,6 +241,9 @@ export const MessageWebSocketProvider: React.FC<
 
   const handleServerChatMessages = useCallback((message: ChatMessageInterface) => {
     lastMessageAction.current = WS_MESSAGE_TYPES.SERVER_CHAT;
+
+    const sessionData = local("json", sessionId).get(`sessionIdentifier`);
+
     setMessages((prevMessages) => {
       let newMessages
       const existingMessageIndex = prevMessages.findIndex(
@@ -251,7 +257,10 @@ export const MessageWebSocketProvider: React.FC<
         newMessages = [...prevMessages, { ...message, state: "sent" as const }]
       }
 
+
+
       local("json", sessionId).set(`sessionIdentifier`, {
+        ...sessionData,
         guestIdentifier: {
           ...currentUser,
           messages: newMessages,

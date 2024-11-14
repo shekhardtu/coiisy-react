@@ -26,7 +26,7 @@ interface EditorContextType {
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
 
 // Create a stable key for localStorage
-const STORAGE_KEY = 'key';
+const STORAGE_KEY = 'sessionIdentifier';
 
 export const EditorProvider: React.FC<{
   children: React.ReactNode;
@@ -66,9 +66,8 @@ export const EditorProvider: React.FC<{
   // Initialize session first
   useEffect(() => {
     if (sessionId) {
-      const savedSession = local("json", sessionId).get(`sessionIdentifier`);
+      const savedSession = local("json", sessionId).get(STORAGE_KEY);
       if (savedSession) {
-        setSessionId(sessionId);
         setSessionData(savedSession);
       }
     }
@@ -77,7 +76,7 @@ export const EditorProvider: React.FC<{
   // Persist session data changes
   useEffect(() => {
     if (sessionId && sessionData) {
-      local("json", STORAGE_KEY).set(`sessionIdentifier-${sessionId}`, sessionData);
+      local("json", sessionId).set(STORAGE_KEY, sessionData);
     }
   }, [sessionData, sessionId]);
 

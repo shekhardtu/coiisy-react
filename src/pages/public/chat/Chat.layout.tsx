@@ -17,7 +17,7 @@ const ChatLayoutContent: React.FC<{ existingSessionId: string | undefined }> = (
 
   const navigate = useNavigate();
 
-  const [isJoinModalOpen, setIsJoinModalOpen] = useState(true);
+  const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
   const { tryConnect } = useWebSocket();
 
   const {
@@ -30,9 +30,15 @@ const ChatLayoutContent: React.FC<{ existingSessionId: string | undefined }> = (
   useEffect(() => {
     if (existingSessionId) {
       const savedSessionData = local("json", existingSessionId).get(`sessionIdentifier`);
+
+
       if (savedSessionData?.guestIdentifier) {
         setSessionData(savedSessionData);
+        setIsJoinModalOpen(false);
+      } else {
+        setIsJoinModalOpen(true);
       }
+
     }
   }, [existingSessionId, setSessionData]);
 
@@ -56,6 +62,7 @@ const ChatLayoutContent: React.FC<{ existingSessionId: string | undefined }> = (
       sessionId,
       createdAt: getCurrentTimeStamp()
     };
+
 
     if (!existingSessionId) {
       navigate(`/${sessionId}`);
