@@ -11,10 +11,6 @@ export interface ChatMessageInterface {
 
 
 
-export interface CurrentUserInterface {
-  userId: string;
-  fullName: string;
-}
 
 export interface ChatStatus {
   status: 'connected' | 'disconnected' | 'connecting' | 'reconnecting';

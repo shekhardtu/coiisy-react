@@ -5,8 +5,7 @@ import { WS_MESSAGE_TYPES } from "@/lib/webSocket.config";
 import React, { useCallback, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import "../cat/style.css";
-import useEditorContext from "../coEditor/hooks/useEditor.contexthook";
-import { CurrentUserInterface } from "./components/chat.types";
+import { CurrentUserInterface } from "../coEditor/components/Editor.types";
 import ChatHeader from "./components/ChatHeader";
 import ChatInput from "./components/ChatInput";
 import ChatMessages from "./components/ChatMessages";
@@ -29,7 +28,6 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
   const chatContainerRef = useRef<HTMLDivElement>(null)
 
   const { sessionId } = useParams()
-  const { isJoinModalOpen } = useEditorContext()
   const {
     status,
     tryConnect,
@@ -41,7 +39,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
   const { keyboardVisible, isKeyboardSupported } = useViewport()
 
   const { guestIdentifier } =
-    local("json", "key").get(`sessionIdentifier-${sessionId}`) || {}
+    local("json", sessionId).get(`sessionIdentifier`) || {}
   const currentUser: CurrentUserInterface = guestIdentifier
 
   // Virtual Keyboard setup
@@ -52,11 +50,6 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
     virtualKeyboard.overlaysContent = true
   }, [])
 
-  useEffect(() => {
-    if (!isJoinModalOpen) {
-      tryConnect()
-    }
-  }, [isJoinModalOpen])
 
   useEffect(() => {
     if (sessionId) {
@@ -72,7 +65,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
         type: WS_MESSAGE_TYPES.CLIENT_USER_JOINED_SESSION,
         sessionId,
         userId: currentUser.userId,
-        fullName: currentUser.fullName,
+        fullName: currentUser.fullName || "",
       })
     }
   }, [
@@ -156,9 +149,6 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
       window.removeEventListener("resize", handleResize)
     }
   }, [])
-
-
-
 
 
   return (

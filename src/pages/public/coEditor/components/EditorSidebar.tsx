@@ -19,8 +19,9 @@ const EditorSidebar = () => {
 
   const handleSendMessage = useCallback((message: string) => {
 
-    const { guestIdentifier } = local("json", "key").get(`sessionIdentifier-${sessionId}`) || {}
 
+    const { guestIdentifier } = local("json", sessionId).get(`sessionIdentifier`) || {}
+    const sessionData = local("json", sessionId).get(`sessionIdentifier`);
 
 
     const guestIdentifierUpdatedWithNewMessage =  {
@@ -32,7 +33,11 @@ const EditorSidebar = () => {
         createdAt: new Date().toISOString(),
       }],
     }
-    local("json", "key").set(`sessionIdentifier-${sessionId}`, {guestIdentifier: guestIdentifierUpdatedWithNewMessage, sessionId})
+    local("json", sessionId).set(`sessionIdentifier`, {
+      ...sessionData,
+      guestIdentifier: guestIdentifierUpdatedWithNewMessage,
+      sessionId
+    })
 
   }, [])
 

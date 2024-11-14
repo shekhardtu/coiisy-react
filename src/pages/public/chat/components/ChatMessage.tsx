@@ -4,11 +4,11 @@ import { MoreVertical } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ChatMessageInterface,
+  CurrentUserInterface,
   OnlineUserInterface,
 } from "../../coEditor/components/Editor.types";
 import UserAvatar from "../../coEditor/components/UserAvatar";
 import { useOnlineUsers } from "../../coEditor/hooks/useOnlineUsers";
-import { CurrentUserInterface } from "./chat.types";
 import ChatMessageActions from "./ChatMessageActions";
 import ChatMessageState from "./ChatMessageState";
 

@@ -1,8 +1,7 @@
-import { getCurrentTimeStamp, local } from '@/lib/utils';
+import { local } from '@/lib/utils';
 import React, { createContext, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { v4 as uuidv4 } from 'uuid';
-import { CurrentUserInterface, SessionDataInterface } from '../components/Editor.types';
-import { JoinSessionModal } from '../components/JoinSessionModal';
+import { SessionDataInterface } from '../components/Editor.types';
+
 
 interface EditorContextType {
   theme: "light" | "dark";
@@ -13,15 +12,11 @@ interface EditorContextType {
   setIsWebSocketConnected: (connected: boolean) => void;
   sessionData: SessionDataInterface | null;
   setSessionData: (sessionData:   SessionDataInterface | null) => void;
-  initializeSession: ({ sessionId }: { sessionId: string | undefined }) => Promise<void>;
   handleThemeChange: (newTheme: "light" | "dark") => void;
   setSessionId: (sessionId: string | undefined) => void;
   sessionId: string | undefined;
-  isJoinModalOpen: boolean;
-  sessionStats: {
-    onlineCount: number;
-    totalCount: number;
-  };
+
+
   setSessionStats: (sessionStats: { onlineCount: number; totalCount: number }) => void;
   isHeaderVisible: boolean;
   setIsHeaderVisible: (isVisible: boolean) => void;
@@ -31,7 +26,7 @@ interface EditorContextType {
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
 
 // Create a stable key for localStorage
-const STORAGE_KEY = 'key';
+const STORAGE_KEY = 'sessionIdentifier';
 
 export const EditorProvider: React.FC<{
   children: React.ReactNode;
@@ -46,7 +41,7 @@ export const EditorProvider: React.FC<{
   const [isWebSocketConnected, setIsWebSocketConnected] = useState(false);
   const [sessionId, setSessionId] = useState<string | undefined>(undefined);
   const [sessionData, setSessionData] = useState<SessionDataInterface | null>(null);
-  const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
+
   const [sessionStats, setSessionStats] = useState({
     onlineCount: 0,
     totalCount: 0
@@ -71,61 +66,17 @@ export const EditorProvider: React.FC<{
   // Initialize session first
   useEffect(() => {
     if (sessionId) {
-      const savedSession = local("json", STORAGE_KEY).get(`sessionIdentifier-${sessionId}`);
+      const savedSession = local("json", sessionId).get(STORAGE_KEY);
       if (savedSession) {
-        setSessionId(sessionId);
         setSessionData(savedSession);
       }
     }
   }, [sessionId]);
 
-  // Optimized session initialization
-  const initializeSession = useCallback(async ({ sessionId }: { sessionId: string | undefined; }) => {
-    setSessionId(sessionId);
-    if (!sessionId) return;
-
-    const savedSessionData = local("json", STORAGE_KEY).get(`sessionIdentifier-${sessionId}`);
-    if (savedSessionData?.guestIdentifier) {
-      setSessionData(savedSessionData);
-      return;
-    }
-    setIsJoinModalOpen(true);
-  }, []);
-
-  const handleJoinSession = useCallback((fullName: string) => {
-
-    if (!sessionId || !fullName.trim()) return;
-
-    const guestIdentifier: CurrentUserInterface = {
-      fullName: fullName.trim(),
-      userId: uuidv4(),
-      createdAt: getCurrentTimeStamp(),
-      messages: [],
-      isTyping: false,
-      cursorPosition: { line: 0, column: 0 },
-      sessionId
-    };
-
-    const newSessionData = {
-      guestIdentifier,
-      sessionId,
-      createdAt: getCurrentTimeStamp()
-    };
-
-    setSessionData(newSessionData);
-    setSessionId(sessionId);
-    local("json", STORAGE_KEY).set(`sessionIdentifier-${sessionId}`, newSessionData);
-
-    setIsJoinModalOpen(false);
-
-  }, [sessionId]);
-
-
-
   // Persist session data changes
   useEffect(() => {
     if (sessionId && sessionData) {
-      local("json", STORAGE_KEY).set(`sessionIdentifier-${sessionId}`, sessionData);
+      local("json", sessionId).set(STORAGE_KEY, sessionData);
     }
   }, [sessionData, sessionId]);
 
@@ -202,9 +153,8 @@ export const EditorProvider: React.FC<{
     sessionId,
     setSessionId,
     setSessionData,
-    initializeSession,
     handleThemeChange,
-    isJoinModalOpen,
+
     sessionStats,
     setSessionStats,
     isHeaderVisible,
@@ -217,8 +167,7 @@ export const EditorProvider: React.FC<{
     sessionData,
     sessionId,
     handleThemeChange,
-    initializeSession,
-    isJoinModalOpen,
+
     sessionStats,
     isHeaderVisible,
     handleHeaderVisibility,
@@ -229,14 +178,7 @@ export const EditorProvider: React.FC<{
   return (
     <EditorContext.Provider value={contextValue}>
       {children}
-      <JoinSessionModal
-        isOpen={isJoinModalOpen}
-        onJoin={handleJoinSession}
-        sessionName={sessionId}
-        sessionUrl={window.location.href}
-        onlineCount={sessionStats.onlineCount}
-        totalCount={sessionStats.totalCount}
-      />
+
     </EditorContext.Provider>
   );
 };
