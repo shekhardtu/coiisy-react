@@ -252,9 +252,9 @@ export const MessageWebSocketProvider: React.FC<
 
       if (existingMessageIndex !== -1) {
         newMessages = [...prevMessages]
-        newMessages[existingMessageIndex] = { ...message, state: "sent" as const }
+        newMessages[existingMessageIndex] = { ...message  }
       } else {
-        newMessages = [...prevMessages, { ...message, state: "sent" as const }]
+        newMessages = [...prevMessages, { ...message }]
       }
 
 

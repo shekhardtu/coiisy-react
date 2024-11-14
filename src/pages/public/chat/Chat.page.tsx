@@ -31,7 +31,6 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
   const {
     status,
     tryConnect,
-
     setSessionId,
     userJoinedSession,
   } = useWebSocket()

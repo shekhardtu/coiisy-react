@@ -44,8 +44,8 @@ export function ChatMessageActions({
     onClose()
   }
 
-  const showDeleteButton = ["sending", "sent", "delivered", "seen"]
-  const showRemoveButton = ["failed", "deleted"]
+  const showDeleteButton = ["sending", "sent", "delivered", "seen"] as const
+  const showRemoveButton = ["failed", "deleted"] as const
 
   return (
     <PopoverContent
@@ -57,7 +57,7 @@ export function ChatMessageActions({
       alignOffset={-30}
     >
       <div className="flex flex-col">
-        {isOwnMessage && showDeleteButton.includes(message?.state ?? "") && (
+        {isOwnMessage && showDeleteButton.includes(message?.state as typeof showDeleteButton[number]) && (
           <>
             <Button
               variant="ghost"
@@ -101,7 +101,7 @@ export function ChatMessageActions({
           </>
         )}
 
-        {isOwnMessage && showRemoveButton.includes(message?.state ?? "") && (
+        {isOwnMessage && showRemoveButton.includes(message?.state as typeof showRemoveButton[number]) && (
           <Button
             variant="ghost"
             className="flex items-center gap-2 w-full justify-start hover:bg-red-50

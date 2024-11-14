@@ -167,6 +167,8 @@ export const getDuration = (currentTimestamp: string | number | Date, previousTi
 };
 
 
+
+
 export const buildCurrentUserObject = (
   { userName, userId, personaColor }: { userName: string, userId: string, personaColor?: string }
 ) => {

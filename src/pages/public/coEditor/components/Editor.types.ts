@@ -3,6 +3,21 @@ import { ClientMessageTypes, ServerMessageTypes, WS_MESSAGE_TYPES } from "@/lib/
 
 export type MessageState = 'sending' | 'sent' | 'delivered' | 'failed' | 'deleted' | 'seen' | 'removed' ;
 
+export type MessageStatesObject = {
+  userId: string,
+  messageMongoId: string,
+  state: MessageState,
+  _id: string,
+  isShow: boolean,
+  description: string,
+  tags: string[],
+  status: string,
+  version: string,
+  __v: number,
+  createdAt: string,
+  updatedAt: string
+}
+
 export interface OnlineUserInterface {
   userId: string;
   initials: string;
@@ -58,7 +73,7 @@ export interface MessageInterface {
   createdAt?: number | string | Date;
   updatedAt?: number | string | Date;
   messageId?: string;
-  state?: MessageState;
+  state?: MessageState | MessageStatesObject[];
 }
 
 export interface BaseMessage {
@@ -222,7 +237,7 @@ export interface ChatMessageInterface extends BaseMessage {
   content: string;
   createdAt: string | Date;
   messageId: string;
-  state?: MessageState;
+  state?: MessageState | MessageState[];
 }
 
 

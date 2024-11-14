@@ -36,7 +36,6 @@ const ChatMessage = React.memo(
       setUser(users.find((user) => user.userId === message.userId))
     }, [message.userId, users])
 
-
     return (
       <div
         className={`flex ${
