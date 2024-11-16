@@ -1,10 +1,10 @@
+import { useMessageWebSocket } from "@/contexts/MessageWebSocket.context";
 import { useWebSocket } from "@/contexts/WebSocketContext";
 import { local } from "@/lib/utils";
 import { WS_MESSAGE_TYPES, wsConfig } from "@/lib/webSocket.config";
 import { isAfter, parseISO, subMinutes } from 'date-fns';
 import { useCallback, useEffect, useState } from "react";
 import { OnlineUserInterface, ServerUserDisconnectedInterface, ServerUserJoinedSessionInterface } from "../components/Editor.types";
-
 interface UseOnlineUsersProps {
   minutes?: number
   sessionId: string
@@ -14,7 +14,7 @@ export const useOnlineUsers = ({ minutes = wsConfig.onlineTimeoutInMinutes, sess
 
 
   const { status } = useWebSocket()
-
+  const { updateSessionMessages } = useMessageWebSocket()
 
   const STORAGE_KEY = sessionId
   const [userHistory, setUserHistory] = useState<OnlineUserInterface[]>(() => {
@@ -92,6 +92,10 @@ export const useOnlineUsers = ({ minutes = wsConfig.onlineTimeoutInMinutes, sess
           });
           return merged.sort((a) => (a.isOnline ? -1 : 1));
         });
+
+
+          updateSessionMessages(data.messages)
+
       }
     );
 

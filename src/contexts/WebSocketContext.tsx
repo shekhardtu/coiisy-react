@@ -172,8 +172,6 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
         return;
       }
 
-      console.log(data.type);
-
       const listeners = listenersRef.current.get(data.type);
       if (listeners) {
         listeners.forEach(listener => listener(data));

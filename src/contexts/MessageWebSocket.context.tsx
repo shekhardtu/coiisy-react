@@ -27,6 +27,7 @@ interface MessageWebSocketContextType {
   lastMessageAction: React.MutableRefObject<string | null>
   removeMessage: (messageId: string) => void
   sendChatMessage: (content: string) => void
+  updateSessionMessages: (messages: ChatMessageInterface[]) => void
 }
 
 const MessageWebSocketContext =
@@ -45,7 +46,7 @@ export const MessageWebSocketProvider: React.FC<
 
   const sendChatMessage = useCallback(
     (content: string) => {
-      if (!currentUser?.userId || !sessionId) {
+      if (!currentUser?.userId || !sessionId || !wsSendMessage) {
         console.warn("Cannot send message: missing user or session data")
         return
       }
@@ -89,6 +90,40 @@ export const MessageWebSocketProvider: React.FC<
     },
     [currentUser, sessionId, wsSendMessage]
   )
+
+  const handleServerChatMessages = useCallback((message: ChatMessageInterface) => {
+    lastMessageAction.current = WS_MESSAGE_TYPES.SERVER_CHAT;
+
+    const sessionData = local("json", sessionId).get(`sessionIdentifier`);
+
+    setMessages((prevMessages) => {
+      let newMessages
+      const existingMessageIndex = prevMessages.findIndex(
+        (msg) => msg.messageId === message.messageId
+      )
+
+      if (existingMessageIndex !== -1) {
+        newMessages = [...prevMessages]
+        newMessages[existingMessageIndex] = { ...message  }
+      } else {
+        newMessages = [...prevMessages, { ...message }]
+      }
+
+
+
+      local("json", sessionId).set(`sessionIdentifier`, {
+        ...sessionData,
+        guestIdentifier: {
+          ...currentUser,
+          messages: newMessages,
+        },
+      })
+
+
+      return newMessages
+    })
+  }, [currentUser, sessionId])
+
 
   const deduplicateMessages = useCallback((messages: ChatMessageInterface[]): ChatMessageInterface[] => {
     const seen = new Map()
@@ -231,7 +266,29 @@ export const MessageWebSocketProvider: React.FC<
       })
     },
     [currentUser, sessionId, deduplicateMessages]
+
+
+
   )
+
+
+  const updateSessionMessages = useCallback((messages: ChatMessageInterface[]) => {
+
+    setMessages(prevMessages => {
+
+      // update props of previous messages
+      const updatedMessages = prevMessages.map((msg) => ({
+        ...msg,
+        state: messages.find(m => m.messageId === msg.messageId)?.state
+      }))
+
+      const allMessages = [...updatedMessages] as ChatMessageInterface[]
+      const uniqueMessages = deduplicateMessages(allMessages)
+
+
+      return uniqueMessages
+    })
+  }, [setMessages, deduplicateMessages])
 
   const handleServerChatDelete = useCallback(
     (message: ChatMessageInterface) => {
@@ -248,37 +305,6 @@ export const MessageWebSocketProvider: React.FC<
     [setMessages]
   )
 
-  const handleServerChatMessages = useCallback((message: ChatMessageInterface) => {
-    lastMessageAction.current = WS_MESSAGE_TYPES.SERVER_CHAT;
-
-    const sessionData = local("json", sessionId).get(`sessionIdentifier`);
-
-    setMessages((prevMessages) => {
-      let newMessages
-      const existingMessageIndex = prevMessages.findIndex(
-        (msg) => msg.messageId === message.messageId
-      )
-
-      if (existingMessageIndex !== -1) {
-        newMessages = [...prevMessages]
-        newMessages[existingMessageIndex] = { ...message  }
-      } else {
-        newMessages = [...prevMessages, { ...message }]
-      }
-
-
-
-      local("json", sessionId).set(`sessionIdentifier`, {
-        ...sessionData,
-        guestIdentifier: {
-          ...currentUser,
-          messages: newMessages,
-        },
-      })
-
-      return newMessages
-    })
-  }, [currentUser, sessionId])
 
 
 
@@ -323,7 +349,8 @@ export const MessageWebSocketProvider: React.FC<
       setMessages,
       deduplicateMessages,
       lastMessageAction,
-      removeMessage
+      removeMessage,
+      updateSessionMessages
     }),
     [
       sendChatMessage,
@@ -335,7 +362,8 @@ export const MessageWebSocketProvider: React.FC<
       setMessages,
       deduplicateMessages,
       lastMessageAction,
-      removeMessage
+      removeMessage,
+      updateSessionMessages
     ]
   )
 

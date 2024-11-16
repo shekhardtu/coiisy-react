@@ -55,7 +55,7 @@ export function NavActions() {
       tryConnect();
 
     }
-  }, [status, disconnect, tryConnect]);
+  }, [status, disconnect]);
 
 
   React.useEffect(() => {

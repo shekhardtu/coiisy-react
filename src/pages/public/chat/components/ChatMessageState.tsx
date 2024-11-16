@@ -1,8 +1,9 @@
 import { wsConfig } from '@/lib/webSocket.config';
 import { Check, CheckCheck, Clock } from 'lucide-react';
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { ChatMessageInterface, CurrentUserInterface } from '../../coEditor/components/Editor.types';
 import { useOnlineUsers } from "../../coEditor/hooks/useOnlineUsers";
+
 interface ChatMessageStateProps {
   message: ChatMessageInterface;
   currentUser: CurrentUserInterface;
@@ -13,76 +14,89 @@ const ChatMessageState = ({ message, currentUser, className }: ChatMessageStateP
   const { activeUsers } = useOnlineUsers({ minutes: wsConfig.onlineTimeoutInMinutes, sessionId: message.sessionId })
   const [showBlue, setShowBlue] = useState(false);
 
-  const [isDelivered, setIsDelivered] = useState(false);
+  const messageStatus = useMemo(() => {
 
-  useEffect(() => {
-    if (!message?.state || activeUsers.length === 0) {
-      setIsDelivered(false);
-      return;
+
+    if (!message?.state?.length) return 'sending';
+
+    // Check if any state is 'sending'
+    if (message.state.some(state => state.state === 'sending')) {
+      return 'sending';
     }
 
+
+
+    // Get all active users except current user
     const activeUsersIds = new Set(
       activeUsers
-        .filter((user: CurrentUserInterface) => user.userId !== currentUser?.userId)
+        .filter(user => user.userId !== currentUser?.userId)
         .map(user => user.userId)
     );
 
-    if (Array.isArray(message.state) && message.state.length > 0) {
-      const deliveredUsersIds = new Set(
-        message.state
-          .filter((messageState) => messageState.state === 'delivered')
-          .map(messageState => messageState.userId)
-      );
+    // Get all users who have received the message
+    const deliveredUsersIds = new Set(
+      message.state
+        .filter(state => state.state === 'delivered')
+        .map(state => state.userId)
+    );
 
-      setIsDelivered(
-        activeUsersIds.size === deliveredUsersIds.size &&
-        [...activeUsersIds].every(userId => deliveredUsersIds.has(userId))
-      );
-    } else {
-      setIsDelivered(false);
+    // Check if message is delivered to all active users
+    const isFullyDelivered =
+      activeUsersIds.size > 0 &&
+      activeUsersIds.size === deliveredUsersIds.size &&
+      [...activeUsersIds].every(userId => deliveredUsersIds.has(userId));
+
+    if (isFullyDelivered) {
+      return 'delivered';
     }
-  }, [message?.state, currentUser?.userId, activeUsers]);
+
+    // If message has any 'sent' state but not delivered to all
+    if (message.state.some(state => state.state === 'sent')) {
+      return 'sent';
+    }
+
+    return 'sending';
+  }, [message.state, activeUsers, currentUser?.userId]);
 
   useEffect(() => {
-    if (isDelivered) {
+    if (messageStatus === 'delivered') {
       const timer = setTimeout(() => setShowBlue(true), 1000);
       return () => clearTimeout(timer);
     }
     setShowBlue(false);
-  }, [isDelivered]);
+  }, [messageStatus]);
+
+  if (message.userId !== currentUser?.userId) return null;
 
   return (
-    <div className={`flex items-center text-[10px] gap-1  ${className}`}>
-      {message.userId === currentUser?.userId  && (
-        <span className="ml-0.5" title={`Message ${message.state}`}>
-          {message.state?.find(state => state.state === 'sending') &&
-            <span title="Message sending">
-              {showBlue ? <Clock size={12} /> : <Check size={12} />}
-            </span>
-          }
-
-          {message.state?.find(state => state.state === 'sent') &&
-            <span title="Message sent">
-            <Check size={12} />
+    <div className={`flex items-center text-[10px] gap-1 ${className}`}>
+      <span className="ml-0.5">
+        {messageStatus === 'sending' && (
+          <span title="Message sending">
+            <Clock size={12} className="text-gray-600" />
           </span>
-          }
+        )}
 
-          {isDelivered &&
-            <span title="Message delivered">
-              <CheckCheck
-                size={12}
-                strokeWidth={3}
-                className={`transition-colors duration-300 font-bold ${showBlue
-                    ? 'text-blue-600 animate-draw-checks'
-                    : 'text-gray-600'
-                  }`}
-              />
-            </span>
-          }
-        </span>
-      )}
+        {messageStatus === 'sent' && (
+          <span title="Message sent">
+            <Check size={12} className="text-gray-600" />
+          </span>
+        )}
+
+        {messageStatus === 'delivered' && (
+          <span title="Message delivered">
+            <CheckCheck
+              size={12}
+              strokeWidth={3}
+              className={`transition-colors duration-300 font-bold ${
+                showBlue ? 'text-blue-600 animate-draw-checks' : 'text-gray-600'
+              }`}
+            />
+          </span>
+        )}
+      </span>
     </div>
-  )
-}
+  );
+};
 
-export default memo(ChatMessageState)
+export default memo(ChatMessageState);

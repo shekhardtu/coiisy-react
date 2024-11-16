@@ -64,18 +64,7 @@ export interface SessionDataInterface {
   updatedAt?: number | string | Date;
 }
 
-export interface MessageInterface {
-  _id?: string;
-  type?: string;
-  sessionId?: string;
-  userId?: string;
-  fullName?: string;
-  content: string;
-  createdAt?: number | string | Date;
-  updatedAt?: number | string | Date;
-  messageId?: string;
-  state?: MessageState | MessageStatesObject[];
-}
+
 
 export interface BaseMessage {
   type: string;
@@ -143,6 +132,7 @@ export interface ClientUserJoinedSessionInterface extends BaseMessage {
 export interface ServerUserJoinedSessionInterface extends BaseMessage {
   type: typeof WS_MESSAGE_TYPES.SERVER_USER_JOINED_SESSION;
   participants: OnlineUserInterface[];
+  messages: ChatMessageInterface[];
 }
 
 export interface ClientUserDisconnectedInterface extends BaseMessage {
@@ -162,7 +152,7 @@ export interface ServerPongInterface extends BaseMessage {
 
 export interface ServerSessionMessagesInterface extends BaseMessage {
   type: typeof WS_MESSAGE_TYPES.SERVER_SESSION_MESSAGES;
-  messages: MessageInterface[];
+  messages: ChatMessageInterface[];
 }
 
 export interface ServerChatEditInterface extends BaseMessage {
@@ -242,6 +232,8 @@ export interface ChatMessageInterface extends BaseMessage {
   messageId: string;
   state?: ChatMessageStateObject[];
 }
+
+
 export type ChatMessageStateObject = {
   userId: string;
   state: MessageState;

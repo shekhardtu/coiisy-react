@@ -57,6 +57,7 @@ const ChatLayoutContent: React.FC<{ existingSessionId: string | undefined }> = (
       sessionId
     };
 
+
     const newSessionData = {
       guestIdentifier,
       sessionId,
@@ -74,7 +75,7 @@ const ChatLayoutContent: React.FC<{ existingSessionId: string | undefined }> = (
     setIsJoinModalOpen(false);
     tryConnect();
 
-  }, [existingSessionId, navigate, setSessionData, tryConnect]);
+  }, [existingSessionId, navigate, setSessionData]);
 
   const sessionStats =  {
     onlineCount: 0,

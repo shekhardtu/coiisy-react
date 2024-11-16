@@ -41,7 +41,7 @@ interface EditorFooterProps {
     }
 
     SetIsWebSocketConnected(status === "connected")
-  }, [status, disconnect, tryConnect])
+  }, [status, disconnect])
 
   return (
     <footer className={`flex items-center bg-background border-t border-border text-xs justify-between h-8 ${className}`}>
