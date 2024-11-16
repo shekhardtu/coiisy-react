@@ -1,6 +1,6 @@
 import { useWebSocket } from "@/contexts/WebSocketContext";
 import { local } from "@/lib/utils";
-import { WS_MESSAGE_TYPES } from "@/lib/webSocket.config";
+import { WS_MESSAGE_TYPES, wsConfig } from "@/lib/webSocket.config";
 import { isAfter, parseISO, subMinutes } from 'date-fns';
 import { useCallback, useEffect, useState } from "react";
 import { OnlineUserInterface, ServerUserDisconnectedInterface, ServerUserJoinedSessionInterface } from "../components/Editor.types";
@@ -10,7 +10,7 @@ interface UseOnlineUsersProps {
   sessionId: string
 }
 
-export const useOnlineUsers = ({ minutes = 120, sessionId }: UseOnlineUsersProps) => {
+export const useOnlineUsers = ({ minutes = wsConfig.onlineTimeoutInMinutes, sessionId }: UseOnlineUsersProps) => {
 
 
   const { status } = useWebSocket()

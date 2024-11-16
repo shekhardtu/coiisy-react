@@ -71,6 +71,8 @@ export const MessageWebSocketProvider: React.FC<
       try {
         // Send to websocket
         wsSendMessage(messageData)
+         // Update local messages immediately
+
         lastMessageAction.current = WS_MESSAGE_TYPES.CLIENT_CHAT;
         return messageData
       } catch (error) {

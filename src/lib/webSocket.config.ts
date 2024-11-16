@@ -8,6 +8,7 @@ interface WebSocketConfig {
   isSecure: boolean;
   connectionTimeout: number;
   healthCheckInterval: number;
+  onlineTimeoutInMinutes: number;
 }
 
 const parseEnvBoolean = (value: string | undefined): boolean => {
@@ -25,6 +26,7 @@ const developmentConfig: WebSocketConfig = {
   isSecure: false,
   connectionTimeout: import.meta.env.VITE_WS_CONNECTION_TIMEOUT || 5000,
   healthCheckInterval: import.meta.env.VITE_WS_HEALTH_CHECK_INTERVAL || 3000,
+  onlineTimeoutInMinutes: import.meta.env.VITE_WS_ONLINE_TIMEOUT_IN_MINUTES || 5,
 };
 
 const productionConfig: WebSocketConfig = {
@@ -37,7 +39,8 @@ const productionConfig: WebSocketConfig = {
   isSecure: true,
   connectionTimeout: import.meta.env.VITE_WS_CONNECTION_TIMEOUT || 5000,
   healthCheckInterval: import.meta.env.VITE_WS_HEALTH_CHECK_INTERVAL || 3000,
-};
+  onlineTimeoutInMinutes: import.meta.env.VITE_WS_ONLINE_TIMEOUT_IN_MINUTES || 5,
+  };
 
 export const wsConfig: WebSocketConfig =
   import.meta.env.PROD ? productionConfig : developmentConfig;

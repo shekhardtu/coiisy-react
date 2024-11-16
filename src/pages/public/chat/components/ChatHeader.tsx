@@ -20,6 +20,7 @@ import { useWebSocket } from "@/contexts/WebSocketContext";
 
 import { AlertTriangle, Loader2, Share2 } from "lucide-react";
 
+import { wsConfig } from "@/lib/webSocket.config";
 import UserAvatars from "../../coEditor/components/UsersAvatar";
 import { EditorContext } from "../../coEditor/contexts/Editor.context";
 import { useOnlineUsers } from "../../coEditor/hooks/useOnlineUsers";
@@ -32,7 +33,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
 
   const editorContext = useContext(EditorContext)
   const { sessionId, tryConnect } = useWebSocket()
-  const { activeUsers } = useOnlineUsers({ minutes: 120, sessionId })
+  const { activeUsers } = useOnlineUsers({ minutes: wsConfig.onlineTimeoutInMinutes, sessionId })
 
 
 
