@@ -11,6 +11,7 @@ import UserAvatar from "../../coEditor/components/UserAvatar";
 import { useOnlineUsers } from "../../coEditor/hooks/useOnlineUsers";
 import ChatMessageActions from "./ChatMessageActions";
 import ChatMessageState from "./ChatMessageState";
+import ChatMessageTime from "./ChatMessageTime";
 
 const ChatMessage = React.memo(
   ({
@@ -35,6 +36,8 @@ const ChatMessage = React.memo(
     useEffect(() => {
       setUser(users.find((user) => user.userId === message.userId))
     }, [message.userId, users])
+
+
 
     return (
       <div
@@ -75,12 +78,12 @@ const ChatMessage = React.memo(
           <div className="flex flex-row gap-1">
             {message.userId !== currentUser?.userId &&
             (!previousMessage || previousMessage.userId !== message.userId) &&
-            message.state !== "deleted" ? (
+            message.state?.find((state) => state.state === "deleted" && state.messageMongoId === message._id) ? (
               <div className="w-8 h-8 rounded-full bg-gray-300 flex-shrink-0 self-start mr-2">
                 <UserAvatar user={user} />
               </div>
             ) : (
-              !isOwnMessage && message.state !== "deleted" && (
+              !isOwnMessage && message.state?.find((state) => state.state !== "deleted") && (
                 <div className="w-8 h-8 rounded-full flex-shrink-0 self-start mr-2" />
               )
             )}
@@ -92,23 +95,33 @@ const ChatMessage = React.memo(
                   setIsOpen(!isOpen)
                 }}
                 className={`max-w-xs w-auto px-4 py-2 rounded-2xl ${
-                  message.state === "deleted"
+                  message.state?.find((state) => {
+
+                    return state.state === "deleted" && state.userId === currentUser?.userId
+                  })
                     ? "bg-gray-50 text-gray-400 text-sm italic px-2 py-1"
                     : isOwnMessage
                     ? "bg-indigo-600 text-white rounded-tr-sm"
                     : "bg-gray-100 text-gray-800 rounded-tl-sm"
                 }`}
               >
-                {message.state === "deleted" ? "This message was deleted" : message.content}
+                {message.state?.find((state) => state.state === "deleted") ? "This message was deleted" : message.content}
               </div>
               <div
                 className={`
-                 overflow-hidden transition-all duration-200`}
+                 overflow-hidden transition-all duration-200 flex items-center, ${
+                  message.userId === currentUser?.userId ? 'justify-end' : 'justify-start'
+                }`}
               >
-                <ChatMessageState
+                <ChatMessageTime
                   message={message}
                   currentUser={currentUser}
                   className="opacity-40 group-hover:opacity-100 transition-all duration-200"
+                />
+                <ChatMessageState
+                  message={message}
+                  currentUser={currentUser}
+                  className="transition-all duration-200"
                 />
               </div>
             </div>

@@ -18,7 +18,7 @@ import { useWebSocket } from "./WebSocketContext";
 interface MessageWebSocketContextType {
 
   editMessage: (messageId: string, newContent: string) => void
-  deleteMessage: (messageId: string) => void
+  deleteMessage: (message: ChatMessageInterface) => void
   reactToMessage: (messageId: string, emoji: string) => void
   removeReaction: (messageId: string, emoji: string) => void
   messages: ChatMessageInterface[]
@@ -65,7 +65,7 @@ export const MessageWebSocketProvider: React.FC<
       // Update local messages immediately
       setMessages((prev) => [
         ...prev,
-        { ...messageData, state: "sending" as const },
+        { ...messageData, state: [{state: "sending", userId: currentUser.userId!, messageMongoId: ""}] },
       ])
 
       try {
@@ -79,7 +79,7 @@ export const MessageWebSocketProvider: React.FC<
         setMessages((prev) =>
           prev.map((msg) =>
             msg.messageId === messageId
-              ? { ...msg, state: "failed" as const }
+              ? { ...msg, state: [{state: "failed", userId: currentUser.userId!, messageMongoId: ""}] }
               : msg
           )
         );
@@ -118,28 +118,31 @@ export const MessageWebSocketProvider: React.FC<
   )
 
   const deleteMessage = useCallback(
-    (messageId: string) => {
-      if (!currentUser?.userId || !sessionId) return
+    (message: ChatMessageInterface) => {
+      if (!currentUser.userId || !sessionId) return
       lastMessageAction.current = WS_MESSAGE_TYPES.CLIENT_CHAT_DELETE;
 
       setMessages(prevMessages =>
         prevMessages.map(msg =>
-          msg.messageId === messageId
-            ? { ...msg, content: "Message has been deleted", state: 'deleted' }
+          msg.messageId === message.messageId
+            ? { ...msg, content: "Message has been deleted", state: [{state: "deleted", userId: currentUser.userId!, messageMongoId: msg.messageId}] }
             : msg
         )
       );
 
       wsSendMessage({
+        ...message,
+        _id: message._id,
         type: WS_MESSAGE_TYPES.CLIENT_CHAT_DELETE,
-        messageId,
+        messageId: message.messageId,
         userId: currentUser.userId,
         sessionId,
         content: '',
         createdAt: getCurrentTimeStamp(),
         fullName: currentUser?.fullName || '',
-        state: 'deleted',
+        state: [{state: "deleted", userId: currentUser.userId!, messageMongoId: message._id!}],
       });
+
     },
     [currentUser, sessionId, wsSendMessage]
   )
@@ -196,7 +199,7 @@ export const MessageWebSocketProvider: React.FC<
       content: '',
       createdAt: getCurrentTimeStamp(),
       fullName: currentUser?.fullName || '',
-      state: 'removed',
+      state: [{state: "removed", userId: currentUser.userId, messageMongoId: ""}],
     });
 
   }, [currentUser, sessionId, wsSendMessage])
@@ -206,7 +209,10 @@ export const MessageWebSocketProvider: React.FC<
 
   const handleSessionReloadMessages = useCallback((session: ServerSessionMessagesInterface) => {
     lastMessageAction.current = WS_MESSAGE_TYPES.SERVER_SESSION_MESSAGES;
+
+
     setMessages((prevMessages) => {
+
         const allMessages = [...prevMessages, ...(session.messages || [])] as ChatMessageInterface[]
         const uniqueMessages = deduplicateMessages(allMessages)
 
@@ -228,6 +234,7 @@ export const MessageWebSocketProvider: React.FC<
   const handleServerChatDelete = useCallback(
     (message: ChatMessageInterface) => {
       lastMessageAction.current = WS_MESSAGE_TYPES.SERVER_CHAT_DELETE;
+
       setMessages(prevMessages =>
         prevMessages.map(msg =>
           msg.messageId === message.messageId
