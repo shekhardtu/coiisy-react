@@ -65,6 +65,7 @@ export interface SessionDataInterface {
 }
 
 export interface MessageInterface {
+  _id?: string;
   type?: string;
   sessionId?: string;
   userId?: string;
@@ -93,6 +94,7 @@ export interface JoinSessionMessageInterface extends BaseMessage {
 
 
 export interface ServerChatMessageInterface {
+  _id?: string;
   type: typeof WS_MESSAGE_TYPES.SERVER_CHAT;
   sessionId: string;
   userId: string;
@@ -230,6 +232,7 @@ export type ClientChatMessageTypes = ClientMessageTypes;
 export type ServerChatMessageTypes = ServerMessageTypes;
 
 export interface ChatMessageInterface extends BaseMessage {
+  _id?: string;
   type: ClientMessageTypes | ServerMessageTypes;
   sessionId: string;
   userId: string;
@@ -237,7 +240,17 @@ export interface ChatMessageInterface extends BaseMessage {
   content: string;
   createdAt: string | Date;
   messageId: string;
-  state?: MessageState | MessageState[];
+  state?: ChatMessageStateObject[];
+}
+export type ChatMessageStateObject = {
+  userId: string;
+  state: MessageState;
+  messageMongoId: string;
+}
+
+export interface ChatMessageStateInterface {
+  userId: string;
+  state: MessageState | ChatMessageStateObject[];
 }
 
 

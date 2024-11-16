@@ -43,8 +43,8 @@ interface WebSocketContextType {
   userJoinedSession: (message: ClientUserJoinedSessionInterface) => void;
   sessionId: string;
   setSessionId: (sessionId: string) => void;
-  currentUser: CurrentUserInterface | null;
-  setCurrentUser: (currentUser: CurrentUserInterface | null) => void;
+  currentUser: CurrentUserInterface;
+  setCurrentUser: (currentUser: CurrentUserInterface) => void;
   sendAuthMessage: (message: AuthMessageInterface) => void;
   serverAvailable: boolean;
 }
@@ -69,7 +69,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   const listenersRef = useRef<Map<string, Set<MessageHandler<WebSocketMessage>>>>(new Map());
   const stateRef = useRef<WebSocketState>({ reconnectCount: 0 });
   const isConnectingRef = useRef<boolean>(false);
-  const [currentUser, setCurrentUser] = useState<CurrentUserInterface | null>(null);
+  const [currentUser, setCurrentUser] = useState<CurrentUserInterface>({} as CurrentUserInterface);
   const [sessionId, setSessionId] = useState<string>("");
   const [serverAvailable, setServerAvailable] = useState(true);
 

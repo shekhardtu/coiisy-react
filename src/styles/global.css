@@ -239,3 +239,19 @@
 }
 
 
+
+@keyframes draw-checks {
+  0% {
+    stroke-dasharray: 20;
+    stroke-dashoffset: -20;
+  }
+  100% {
+    stroke-dasharray: 20;
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-draw-checks {
+  stroke-dasharray: 20;
+  animation: draw-checks 0.8s ease forwards;
+}
