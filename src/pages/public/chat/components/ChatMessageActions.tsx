@@ -34,7 +34,7 @@ export function ChatMessageActions({
         })
         break
       case "delete":
-        deleteMessage(message.messageId)
+        deleteMessage(message)
         break
       case "remove":
         removeMessage(message.messageId)
@@ -44,8 +44,6 @@ export function ChatMessageActions({
     onClose()
   }
 
-  const showDeleteButton = ["sending", "sent", "delivered", "seen"] as const
-  const showRemoveButton = ["failed", "deleted"] as const
 
   return (
     <PopoverContent
@@ -57,8 +55,9 @@ export function ChatMessageActions({
       alignOffset={-30}
     >
       <div className="flex flex-col">
-        {isOwnMessage && showDeleteButton.includes(message?.state as typeof showDeleteButton[number]) && (
-          <>
+
+        <>
+          {isOwnMessage && (
             <Button
               variant="ghost"
               className="flex items-center gap-2 w-full justify-start hover:bg-gray-100/80
@@ -69,8 +68,9 @@ export function ChatMessageActions({
               <Edit size={16} className="text-gray-500" />
               <span>Edit</span>
             </Button>
+          )}
 
-            <Button
+          <Button
               variant="ghost"
               className="flex items-center gap-2 w-full justify-start hover:bg-gray-100/80
               transition-colors duration-200 focus:ring-0 focus-visible:ring-2"
@@ -80,6 +80,8 @@ export function ChatMessageActions({
               <span>Favorite</span>
             </Button>
 
+
+          {isOwnMessage && message.state?.some(s => s.state !== "deleted") && (
             <Button
               variant="ghost"
               className="flex items-center gap-2 w-full justify-start hover:bg-red-50
@@ -89,6 +91,9 @@ export function ChatMessageActions({
               <Trash size={16} />
               <span>Delete</span>
             </Button>
+          )}
+
+
             <Button
               variant="ghost"
               className="flex items-center gap-2 w-full justify-start hover:bg-gray-100/80
@@ -99,9 +104,9 @@ export function ChatMessageActions({
               <span>Copy</span>
             </Button>
           </>
-        )}
 
-        {isOwnMessage && showRemoveButton.includes(message?.state as typeof showRemoveButton[number]) && (
+
+        {isOwnMessage && message.state?.every(s => s.state === "deleted") && (
           <Button
             variant="ghost"
             className="flex items-center gap-2 w-full justify-start hover:bg-red-50
