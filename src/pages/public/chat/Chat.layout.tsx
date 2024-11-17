@@ -38,7 +38,6 @@ const ChatLayoutContent: React.FC<{ existingSessionId: string | undefined }> = (
       } else {
         setIsJoinModalOpen(true);
       }
-
     }
   }, [existingSessionId, setSessionData]);
 
