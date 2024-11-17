@@ -245,6 +245,12 @@ export interface ChatMessageStateInterface {
   state: MessageState | ChatMessageStateObject[];
 }
 
+export interface ServerUserRequestToJoinSessionInterface extends BaseMessage {
+  type: typeof WS_MESSAGE_TYPES.SERVER_USER_REQUEST_TO_JOIN_SESSION;
+  userId: string;
+  fullName: string;
+  sessionId: string;
+}
 
 
 export type ServerMessage =
@@ -256,7 +262,8 @@ export type ServerMessage =
   | ServerChatEditInterface
   | ServerChatDeleteInterface
   | ServerChatReactInterface
-  | ServerChatReactionRemoveInterface;
+  | ServerChatReactionRemoveInterface
+  | ServerUserRequestToJoinSessionInterface;
 
 export type ClientMessage =
   | ChatMessageInterface

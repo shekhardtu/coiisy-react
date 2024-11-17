@@ -68,6 +68,7 @@ export const WS_CLIENT_MESSAGE_TYPES = {
   CLIENT_CHAT_REMOVE: 'client_chat_remove' as const,
   CLIENT_CHAT_REACT: 'client_chat_react' as const,
   CLIENT_CHAT_REACTION_REMOVE: 'client_chat_reaction_remove' as const,
+  CLIENT_USER_APPROVE_TO_JOIN_SESSION: 'client_user_approve_to_join_session' as const,
 }
 
 
@@ -83,6 +84,7 @@ export const WS_SERVER_MESSAGE_TYPES = {
   SERVER_CHAT_REACT: 'server_chat_react' as const,
   SERVER_CHAT_REACTION_REMOVE: 'server_chat_reaction_remove' as const,
   SERVER_CHAT_REMOVE: 'server_chat_remove' as const,
+  SERVER_USER_REQUEST_TO_JOIN_SESSION: 'server_user_request_to_join_session' as const,
 }
 
 // Add these new type utilities

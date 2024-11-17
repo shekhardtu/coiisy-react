@@ -168,12 +168,12 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
       // console.log(data);
       if (!isValidMessageType(data)) {
         console.error('Invalid message format:', data);
-
         return;
       }
 
       const listeners = listenersRef.current.get(data.type);
       if (listeners) {
+        console.log('listeners', listeners);
         listeners.forEach(listener => listener(data));
       }
     } catch (error) {
@@ -182,6 +182,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
       }
     }
   };
+
+
 
   const subscribe = <T extends WebSocketMessage>(
     type: T['type'],
@@ -350,7 +352,6 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
       }
     };
   }, [sessionId]); // Add sessionId as dependency
-
 
 
 

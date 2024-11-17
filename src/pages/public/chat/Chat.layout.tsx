@@ -95,19 +95,15 @@ const ChatLayoutContent: React.FC<{ existingSessionId: string | undefined }> = (
           />
         </div>
       ) : (
-        <ViewportProvider>
-          <MessageWebSocketProvider>
-            <EditorErrorBoundary>
-              <Suspense fallback={
-                <div className="flex items-center justify-center h-full">
-                  <div className="animate-pulse">Loading editor...</div>
-                </div>
-              }>
-                <Outlet context={{ theme, sessionId: sessionData.sessionId }} />
-              </Suspense>
-            </EditorErrorBoundary>
-          </MessageWebSocketProvider>
-        </ViewportProvider>
+        <Suspense fallback={
+          <div className="flex items-center justify-center h-full">
+            <div className="animate-pulse">Loading editor...</div>
+          </div>
+        }>
+          <EditorErrorBoundary>
+            <Outlet context={{ theme, sessionId: sessionData.sessionId }} />
+          </EditorErrorBoundary>
+        </Suspense>
       )}
     </div>
   );
@@ -120,7 +116,13 @@ const ChatLayout: React.FC = () => {
 
   return (
     <EditorProvider>
-      <ChatLayoutContent existingSessionId={sessionId} />
+
+        <ViewportProvider>
+          <MessageWebSocketProvider>
+            <ChatLayoutContent existingSessionId={sessionId} />
+          </MessageWebSocketProvider>
+        </ViewportProvider>
+
     </EditorProvider>
   );
 };
