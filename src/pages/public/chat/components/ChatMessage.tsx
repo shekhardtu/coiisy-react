@@ -1,14 +1,13 @@
 import { Popover, PopoverTrigger } from "@/components/ui/popover";
-import { useWebSocket } from "@/contexts/WebSocketContext";
+import { useMessageWebSocket } from "@/contexts/MessageWebSocket.context";
 import { MoreVertical } from "lucide-react";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ChatMessageInterface,
   CurrentUserInterface,
   OnlineUserInterface,
 } from "../../coEditor/components/Editor.types";
 import UserAvatar from "../../coEditor/components/UserAvatar";
-import { useOnlineUsers } from "../../coEditor/hooks/useOnlineUsers";
 import ChatMessageActions from "./ChatMessageActions";
 import ChatMessageState from "./ChatMessageState";
 import ChatMessageTime from "./ChatMessageTime";
@@ -18,24 +17,40 @@ const ChatMessage = React.memo(
     message,
     currentUser,
     previousMessage,
+    activeUsers,
   }: {
     message: ChatMessageInterface
     currentUser: CurrentUserInterface
     isNewMessage?: boolean
     previousMessage?: ChatMessageInterface
-    }) => {
+    activeUsers: OnlineUserInterface[]
+  }) => {
     // const longPressHandlers = useLongPress(() => {
     //   setIsOpen(!isOpen)
     // })
     const isOwnMessage = message.userId === currentUser?.userId
     const [isOpen, setIsOpen] = useState(false)
     const [user, setUser] = useState<OnlineUserInterface>()
-    const { sessionId } = useWebSocket()
-    const messageBubbleRef = useRef<HTMLDivElement>(null)
-    const { users } = useOnlineUsers({ minutes: 120, sessionId: sessionId })
+      const messageBubbleRef = useRef<HTMLDivElement>(null)
     useEffect(() => {
-      setUser(users.find((user) => user.userId === message.userId))
-    }, [message.userId, users])
+      setUser(activeUsers.find((user) => user.userId === message.userId))
+    }, [message.userId, activeUsers])
+    const { deleteMessage, removeMessage } = useMessageWebSocket()
+
+    const chatMessageActionProps = useMemo(() => ({
+      message,
+      isOwnMessage,
+      isOpen,
+      onClose: () => setIsOpen(false),
+      deleteMessage,
+      removeMessage,
+    }), [message, isOwnMessage, isOpen, deleteMessage, removeMessage])
+
+    const chatMessageStateProps = useMemo(() => ({
+      activeUsers,
+      message,
+      currentUser,
+    }), [activeUsers, message, currentUser])
 
 
 
@@ -68,10 +83,7 @@ const ChatMessage = React.memo(
               </button>
             </PopoverTrigger>
             <ChatMessageActions
-              message={message}
-              isOwnMessage={isOwnMessage}
-              isOpen={isOpen}
-              onClose={() => setIsOpen(false)}
+              {...chatMessageActionProps}
             />
           </Popover>
 
@@ -117,8 +129,7 @@ const ChatMessage = React.memo(
                   className="opacity-40 group-hover:opacity-100 transition-all duration-200"
                 />
                 <ChatMessageState
-                  message={message}
-                  currentUser={currentUser}
+                  {...chatMessageStateProps}
                   className="transition-all duration-200"
                 />
               </div>

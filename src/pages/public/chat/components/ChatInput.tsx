@@ -7,14 +7,13 @@ import { ChatStatus } from './chat.types';
 
 interface ChatInputProps {
   status: ChatStatus['status'];
-  onMessageSent: (message: string) => void;
   scrollToBottom?: () => void;
   tryConnect: () => void;
 }
 
 const ChatInput: React.FC<ChatInputProps> = ({
   status,
-  onMessageSent,
+
   scrollToBottom,
   tryConnect
 }) => {
@@ -26,7 +25,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
     const messageContent = inputRef.current.value.trim();
     sendChatMessage(messageContent);
-    onMessageSent(messageContent);
+
     if (scrollToBottom) {
       scrollToBottom();
     }

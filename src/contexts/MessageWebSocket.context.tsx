@@ -93,8 +93,6 @@ export const MessageWebSocketProvider: React.FC<
 
   const handleServerChatMessages = useCallback((message: ChatMessageInterface) => {
     lastMessageAction.current = WS_MESSAGE_TYPES.SERVER_CHAT;
-
-
     const sessionData = local("json", sessionId).get(`sessionIdentifier`);
 
     setMessages((prevMessages) => {
@@ -128,13 +126,14 @@ export const MessageWebSocketProvider: React.FC<
 
   const deduplicateMessages = useCallback((messages: ChatMessageInterface[]): ChatMessageInterface[] => {
     const seen = new Map()
-    return messages.filter((msg) => {
+    // reverse to keep the latest in the array and remove duplicates
+    return messages.reverse().filter((msg) => {
       if (seen.has(msg.messageId)) {
         return false
       }
       seen.set(msg.messageId, true)
       return true
-    })
+    }).reverse()
   }, [])
 
   const editMessage = useCallback(
@@ -253,10 +252,17 @@ export const MessageWebSocketProvider: React.FC<
     }
 
 
-    setMessages((prevMessages) => {
 
-        const allMessages = [...prevMessages, ...(session.messages || [])] as ChatMessageInterface[]
-        const uniqueMessages = deduplicateMessages(allMessages)
+    setMessages((prevMessages) => {
+      console.log('prevMessages', prevMessages);
+      console.log('session.messages', session.messages);
+
+
+      const allMessages = [...prevMessages, ...(session.messages || [])] as ChatMessageInterface[]
+
+      const uniqueMessages = deduplicateMessages(allMessages)
+      console.log('allMessages', uniqueMessages[uniqueMessages.length - 1]);
+      console.log('session.messages', allMessages[allMessages.length - 1]);
 
         const sessionData = local("json", sessionId).get(`sessionIdentifier`);
 
@@ -282,11 +288,15 @@ export const MessageWebSocketProvider: React.FC<
     setMessages(prevMessages => {
 
       // update props of previous messages
-      const updatedMessages = prevMessages.map((msg) => ({
-        ...msg,
-        content: messages.find(m => m.messageId === msg.messageId)?.content,
-        state: messages.find(m => m.messageId === msg.messageId)?.state
-      }))
+      const updatedMessages = prevMessages.map((msg) => {
+        console.log('msg', msg);
+        const message = messages.find(m => m.messageId === msg.messageId)
+        return {
+          ...msg,
+          content: message?.content,
+          state: message?.state
+        }
+      })
 
       const allMessages = [...updatedMessages] as ChatMessageInterface[]
       const uniqueMessages = deduplicateMessages(allMessages)

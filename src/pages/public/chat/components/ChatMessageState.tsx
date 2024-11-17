@@ -1,27 +1,24 @@
-import { wsConfig } from "@/lib/webSocket.config";
 import { Check, CheckCheck, Clock } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
 import {
   ChatMessageInterface,
   CurrentUserInterface,
+  OnlineUserInterface,
 } from "../../coEditor/components/Editor.types";
-import { useOnlineUsers } from "../../coEditor/hooks/useOnlineUsers";
-
 interface ChatMessageStateProps {
   message: ChatMessageInterface
   currentUser: CurrentUserInterface
   className?: string
+  activeUsers: OnlineUserInterface[]
 }
 
 const ChatMessageState = ({
   message,
   currentUser,
   className,
+  activeUsers,
 }: ChatMessageStateProps) => {
-  const { activeUsers } = useOnlineUsers({
-    minutes: wsConfig.onlineTimeoutInMinutes,
-    sessionId: message.sessionId,
-  })
+
   const [showBlue, setShowBlue] = useState(false)
 
   const messageStatus = useMemo(() => {

@@ -5,23 +5,25 @@ import { Copy, Edit, Heart, Trash } from "lucide-react";
 import { memo } from "react";
 import { ChatMessageInterface } from "../../coEditor/components/Editor.types";
 
-import { useMessageWebSocket } from "@/contexts/MessageWebSocket.context";
-
 interface ChatMessageActionsProps {
   message: ChatMessageInterface
 
   isOwnMessage: boolean
   isOpen: boolean
   onClose: () => void
+  deleteMessage: (message: ChatMessageInterface) => void
+  removeMessage: (messageId: string) => void
 }
 
 export function ChatMessageActions({
   message,
   isOwnMessage,
   onClose,
+  deleteMessage,
+  removeMessage,
 }: ChatMessageActionsProps) {
   const { toast } = useToast()
-  const { deleteMessage, removeMessage } = useMessageWebSocket()
+
 
   const handleAction = (action: string) => {
     switch (action) {

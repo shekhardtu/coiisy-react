@@ -71,7 +71,7 @@ const publicRoutes = [
         children: [
           {
             path: ":sessionId",
-            element: <ChatPage onSendMessage={() => {}} />,
+            element: <ChatPage  />,
           },
         ],
       },

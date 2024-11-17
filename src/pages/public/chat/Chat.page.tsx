@@ -1,11 +1,12 @@
 import { useViewport } from "@/contexts/Viewport.context";
 import { useWebSocket } from "@/contexts/WebSocketContext";
 import { cn, local } from "@/lib/utils";
-import { WS_MESSAGE_TYPES } from "@/lib/webSocket.config";
-import React, { useCallback, useEffect, useRef } from "react";
+import { WS_MESSAGE_TYPES, wsConfig } from "@/lib/webSocket.config";
+import React, { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { useParams } from "react-router-dom";
 import "../cat/style.css";
 import { CurrentUserInterface } from "../coEditor/components/Editor.types";
+import { useOnlineUsers } from "../coEditor/hooks/useOnlineUsers";
 import ChatHeader from "./components/ChatHeader";
 import ChatInput from "./components/ChatInput";
 import ChatMessages from "./components/ChatMessages";
@@ -17,16 +18,10 @@ interface NavigatorWithVirtualKeyboard extends Navigator {
   }
 }
 
-export interface ChatPageProps {
-  onSendMessage: (message: string) => void
-}
-
-const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
 
 
-
+const ChatPage: React.FC =() => {
   const chatContainerRef = useRef<HTMLDivElement>(null)
-
   const { sessionId } = useParams()
   const {
     status,
@@ -34,6 +29,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
     setSessionId,
     userJoinedSession,
   } = useWebSocket()
+
 
   const { keyboardVisible, isKeyboardSupported } = useViewport()
 
@@ -50,15 +46,15 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
   }, [])
 
 
+
+
+
+
   useEffect(() => {
     if (sessionId) {
       setSessionId(sessionId)
     }
-  }, [sessionId, setSessionId])
 
-
-
-  useEffect(() => {
     if (sessionId && status === "connected" && currentUser?.userId) {
       userJoinedSession({
         type: WS_MESSAGE_TYPES.CLIENT_USER_JOINED_SESSION,
@@ -73,11 +69,10 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
     status,
     currentUser?.userId,
     currentUser?.fullName,
+    setSessionId,
   ])
 
-
-
-
+  const { activeUsers } = useOnlineUsers({ minutes: wsConfig.onlineTimeoutInMinutes, sessionId: sessionId! })
 
 
   const scrollToBottom = useCallback((force = false) => {
@@ -149,17 +144,23 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
     }
   }, [])
 
+  // Memoize values passed to ChatHeader
+  const headerProps = useMemo(() => ({
+    status,
+    tryConnect,
+    activeUsers,
+    className: cn(
+      "flex-none border-b border-border header top-0 left-0 right-0 z-50",
+      `${keyboardVisible && !isKeyboardSupported && "mb-[env(keyboard-inset-height,0)] fixed"}`
+    )
+  }), [status, tryConnect, activeUsers, keyboardVisible, isKeyboardSupported]);
+
+
+
 
   return (
     <div className="chat_container" role="main" aria-label="Chat interface">
-      <ChatHeader
-        status={status}
-        tryConnect={tryConnect}
-        className={cn(
-          "flex-none border-b border-border header top-0 left-0 right-0 z-50",
-          `${keyboardVisible && !isKeyboardSupported && "mb-[env(keyboard-inset-height,0)] fixed"}`
-        )}
-      />
+      <ChatHeader {...headerProps} />
 
       <div
         ref={chatContainerRef}
@@ -177,7 +178,6 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
       <div className="compose" role="form" aria-label="Message composition">
         <ChatInput
           status={status}
-          onMessageSent={onSendMessage}
           scrollToBottom={scrollToBottom}
           tryConnect={tryConnect}
         />
@@ -186,4 +186,4 @@ const ChatPage: React.FC<ChatPageProps> = ({ onSendMessage }) => {
   )
 }
 
-export default ChatPage
+export default memo(ChatPage)

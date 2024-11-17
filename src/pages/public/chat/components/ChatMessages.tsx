@@ -3,8 +3,10 @@ import { useViewport } from '@/contexts/Viewport.context';
 import { cn } from '@/lib/utils';
 import React, { memo, useEffect, useRef } from 'react';
 
-import { WS_MESSAGE_TYPES } from '@/lib/webSocket.config';
+import { useWebSocket } from '@/contexts/WebSocketContext';
+import { WS_MESSAGE_TYPES, wsConfig } from '@/lib/webSocket.config';
 import { CurrentUserInterface } from '../../coEditor/components/Editor.types';
+import { useOnlineUsers } from '../../coEditor/hooks/useOnlineUsers';
 import ChatMessage from './ChatMessage';
 interface ChatMessagesProps {
   currentUser: CurrentUserInterface;
@@ -14,9 +16,17 @@ interface ChatMessagesProps {
 
 const ChatMessages: React.FC<ChatMessagesProps> = ({  currentUser, scrollToBottom,  }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { keyboardVisible, isKeyboardSupported} = useViewport()
+  const { keyboardVisible, isKeyboardSupported } = useViewport()
+
+
 
   const { messages, lastMessageAction } = useMessageWebSocket();
+  const { sessionId } = useWebSocket()
+
+  const { activeUsers } = useOnlineUsers({
+    minutes: wsConfig.onlineTimeoutInMinutes,
+    sessionId: sessionId,
+  })
 
 
 
@@ -48,6 +58,7 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({  currentUser, scrollToBotto
           currentUser={currentUser}
           isNewMessage={index === messages.length - 1}
           previousMessage={index > 0 ? messages[index - 1] : undefined}
+          activeUsers={activeUsers}
         />
       ))}
       <div ref={messagesEndRef} />

@@ -1,9 +1,11 @@
 import { cn } from "@/lib/utils";
-import React, { memo, useContext } from "react";
+import React, { memo, useRef } from "react";
 import { ChatStatus } from "./chat.types";
+
 interface ChatHeaderProps {
   status: ChatStatus["status"]
   tryConnect: ChatStatus["tryConnect"]
+  activeUsers: OnlineUserInterface[]
   className?: string
 }
 
@@ -20,30 +22,18 @@ import { useWebSocket } from "@/contexts/WebSocketContext";
 
 import { AlertTriangle, Loader2, Share2 } from "lucide-react";
 
-import { wsConfig } from "@/lib/webSocket.config";
+import { OnlineUserInterface } from "../../coEditor/components/Editor.types";
 import UserAvatars from "../../coEditor/components/UsersAvatar";
-import { EditorContext } from "../../coEditor/contexts/Editor.context";
-import { useOnlineUsers } from "../../coEditor/hooks/useOnlineUsers";
 import { NavActions } from "./NavActions";
+
 
 const ChatHeader: React.FC<ChatHeaderProps> = ({
   status,
   className,
+  activeUsers,
 }) => {
-
-  const editorContext = useContext(EditorContext)
-  const { sessionId, tryConnect } = useWebSocket()
-  const { activeUsers } = useOnlineUsers({ minutes: wsConfig.onlineTimeoutInMinutes, sessionId })
-
-
-
-
-  if (!editorContext) {
-    throw new Error("EditorLayoutContent must be used within EditorProvider")
-  }
-
-  const url = window.location.href
-
+  const { tryConnect } = useWebSocket()
+  const urlRef = useRef(window.location.href)
   return (
     <header
       className={cn(
@@ -88,13 +78,14 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
                     <span className="hidden sm:inline-block ml-2">Share</span>
                   </div>
                 </DropdownMenuTrigger>
+
                 <DropdownMenuContent
                   align="end"
                   className="w-[300px] z-50"
                   onCloseAutoFocus={(e) => e.preventDefault()}
                 >
                   <div className="p-2">
-                    <CopyWithInput url={url} />
+                    <CopyWithInput url={urlRef.current} />
                   </div>
                 </DropdownMenuContent>
               </DropdownMenu>
