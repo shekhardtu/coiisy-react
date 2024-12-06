@@ -173,9 +173,8 @@ export const buildCurrentUserObject = (
   { fullName, userId, personaColor }: { fullName: string, userId: string, personaColor?: string }
 ) => {
    const userObject = {
-    fullName: fullName,
-    userId,
     fullName,
+    userId,
     timestamp: Date.now(),
     color: personaColor || "#" + Math.floor(Math.random() * 16777215).toString(16),
     isTyping: false,
