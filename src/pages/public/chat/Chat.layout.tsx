@@ -32,7 +32,7 @@ const ChatLayoutContent: React.FC<{ existingSessionId: string | undefined }> = (
       const savedSessionData = local("json", existingSessionId).get(`sessionIdentifier`);
 
 
-      if (savedSessionData?.guestIdentifier) {
+      if (savedSessionData?.userIdentifier) {
         setSessionData(savedSessionData);
         setIsJoinModalOpen(false);
       } else {
@@ -47,7 +47,7 @@ const ChatLayoutContent: React.FC<{ existingSessionId: string | undefined }> = (
     if (!fullName.trim()) return;
     const sessionId = existingSessionId || uuidv4();
 
-    const guestIdentifier: CurrentUserInterface = {
+    const userIdentifier: CurrentUserInterface = {
       fullName: fullName.trim(),
       userId: uuidv4(),
       createdAt: getCurrentTimeStamp(),
@@ -58,7 +58,7 @@ const ChatLayoutContent: React.FC<{ existingSessionId: string | undefined }> = (
 
 
     const newSessionData = {
-      guestIdentifier,
+      userIdentifier,
       sessionId,
       createdAt: getCurrentTimeStamp()
     };

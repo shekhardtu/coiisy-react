@@ -24,7 +24,8 @@ const ChatMessage = React.memo(
     isNewMessage?: boolean
     previousMessage?: ChatMessageInterface
     activeUsers: OnlineUserInterface[]
-  }) => {
+    }) => {
+
     // const longPressHandlers = useLongPress(() => {
     //   setIsOpen(!isOpen)
     // })
@@ -33,8 +34,17 @@ const ChatMessage = React.memo(
     const [user, setUser] = useState<OnlineUserInterface>()
       const messageBubbleRef = useRef<HTMLDivElement>(null)
     useEffect(() => {
-      setUser(activeUsers.find((user) => user.userId === message.userId))
-    }, [message.userId, activeUsers])
+      const foundUser = activeUsers.find(user => user.userId === message.userId)
+      setUser(foundUser || {
+        initials: message.fullName?.slice(0, 2),
+        fullName: message.fullName,
+        isOnline: false,
+        userId: message.userId,
+        isShow: true,
+        connectedAt: new Date(),
+        lastSeenAt: new Date(),
+      })
+    }, [message.userId, message.fullName, activeUsers])
     const { deleteMessage, removeMessage } = useMessageWebSocket()
 
     const chatMessageActionProps = useMemo(() => ({

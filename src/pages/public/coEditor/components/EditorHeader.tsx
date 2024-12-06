@@ -41,7 +41,7 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
     const unsubscribeUserJoined = subscribe(
       WS_MESSAGE_TYPES.SERVER_USER_JOINED_SESSION,
       (data: ServerUserJoinedSessionInterface) => {
-        const users: OnlineUserInterface[] = data.participants
+        const users: OnlineUserInterface[] = data.guests
           .map((user) => ({
             initials: user.fullName?.slice(0, 2),
             fullName: user.fullName,

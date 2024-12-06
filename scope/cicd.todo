@@ -1,12 +1,12 @@
-[] Setup ws code with tsoa
-[] Setup automated deployment with github actions
+[x] Setup ws code with tsoa
+[x] Setup automated deployment with github actions
 [] Buy premium domain ie. coeasy.com, coeasy.ai, coeasy.io, teenin.com
-[] Deploy the landing page with domain
-[] Enable local testing with tsoa, openapi doc
+[x] Deploy the landing page with domain
+[x] Enable local testing with tsoa, openapi doc
 [] Setup the monitoring and logging
 [] Setup the alerting with prometheus and grafana
 [] Setup the backup and recovery
-[] Setup coiisy.com with anonymous chatrooms
+[x] Setup coiisy.com with anonymous chatrooms
 
 
 

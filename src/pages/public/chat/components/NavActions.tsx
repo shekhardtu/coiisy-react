@@ -5,6 +5,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { useWebSocket } from "@/contexts/WebSocketContext";
 import { cn } from "@/lib/utils";
 import {
@@ -14,7 +15,8 @@ import {
   MoreHorizontal,
   Settings2,
   Sun,
-  Trash2
+  Trash2,
+  UserPlus
 } from "lucide-react";
 import * as React from "react";
 import { useNavigate } from "react-router-dom";
@@ -25,9 +27,10 @@ import { ConfirmModal } from "./ConfirmModal";
 type MenuItem = {
   label: string;
   icon: React.ComponentType;
-  onClick: () => void;
+  onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
   premium?: boolean;
   className?: string;
+  rightElement?: React.ReactNode;
 };
 
 export function NavActions() {
@@ -57,7 +60,6 @@ export function NavActions() {
     }
   }, [status, disconnect]);
 
-
   React.useEffect(() => {
     if (status === "connected") {
       setConnectionLabel("Disconnect Session");
@@ -65,6 +67,27 @@ export function NavActions() {
       setConnectionLabel("Reconnect Session");
     }
   }, [status]);
+
+  const [autoJoinEnabled, setAutoJoinEnabled] = React.useState(false);
+
+  const AutoJoinSwitch = () => {
+    return (
+      <Switch
+        checked={autoJoinEnabled}
+        onCheckedChange={(checked) => {
+          setAutoJoinEnabled(checked);
+        }}
+        property="autoJoinEnabled"
+        className={cn(
+          "ml-auto scale-75",
+          autoJoinEnabled ? "bg-yellow-500 data-[state=checked]:bg-yellow-500" : "bg-gray-600"
+        )}
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
+      />
+    );
+  }
 
 
 
@@ -82,17 +105,23 @@ export function NavActions() {
         icon: FileText,
         onClick: () => console.log("Wiki"),
         premium: true,
-        className: " cursor-not-allowed hover:bg-amber-50 dark:hover:bg-amber-950/30",
+        className: "cursor-not-allowed hover:bg-amber-50 dark:hover:bg-amber-950/30",
       },
+
     ],
     [
+      {
+        label: "Auto Join",
+        icon: UserPlus,
+        onClick: (e) => e.stopPropagation(),
+        className: "hover:bg-amber-50 dark:hover:bg-amber-950/30",
+        rightElement: <AutoJoinSwitch />,
+      },
       {
         label: connectionLabel,
         icon: Link,
         onClick: handleDisconnectSession,
       },
-
-
       {
         label: "Clear Session",
         icon: Trash2,
@@ -140,12 +169,13 @@ export function NavActions() {
                           item.premium ? "hover:bg-amber-50 dark:hover:bg-amber-950/30" : "",
                           item.className
                         )}
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           if (item.premium) {
                             console.log('Premium feature');
                             return;
                           }
-                          item.onClick?.();
+                          item.onClick?.(e);
                           setIsOpen(false);
                         }}
                       >
@@ -158,6 +188,7 @@ export function NavActions() {
                         <span>
                           {item.label}
                         </span>
+                        {item.rightElement}
                         {item.premium && (
                           <span className="ml-auto px-1.5 py-0 text-[9px] font-medium bg-amber-500  text-black dark:text-amber-400 rounded-full">
                             PRO

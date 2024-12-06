@@ -154,8 +154,8 @@ const RealTimeEditor: React.FC = () => {
     const sessionData = getSessionData();
     setSessionData({
       ...sessionData,
-      guestIdentifier: {
-        ...sessionData.guestIdentifier,
+      userIdentifier: {
+        ...sessionData.userIdentifier,
         cursorPosition: { line: 0, column: 0 }
       } as CurrentUserInterface,
       editor: {
