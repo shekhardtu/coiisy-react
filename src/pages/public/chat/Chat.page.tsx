@@ -1,3 +1,4 @@
+import { useMessageWebSocket } from "@/contexts/MessageWebSocket.context";
 import { useViewport } from "@/contexts/Viewport.context";
 import { useWebSocket } from "@/contexts/WebSocketContext";
 import { cn, local } from "@/lib/utils";
@@ -10,7 +11,6 @@ import { useOnlineUsers } from "../coEditor/hooks/useOnlineUsers";
 import ChatHeader from "./components/ChatHeader";
 import ChatInput from "./components/ChatInput";
 import ChatMessages from "./components/ChatMessages";
-
 interface NavigatorWithVirtualKeyboard extends Navigator {
   virtualKeyboard?: {
     show: () => void
@@ -30,12 +30,14 @@ const ChatPage: React.FC =() => {
     userJoinedSession,
   } = useWebSocket()
 
+  const {   sessionStatus } = useMessageWebSocket()
+
 
   const { keyboardVisible, isKeyboardSupported } = useViewport()
 
-  const { guestIdentifier } =
+  const { userIdentifier } =
     local("json", sessionId).get(`sessionIdentifier`) || {}
-  const currentUser: CurrentUserInterface = guestIdentifier
+  const currentUser: CurrentUserInterface = userIdentifier
 
   // Virtual Keyboard setup
   useEffect(() => {
@@ -177,6 +179,7 @@ const ChatPage: React.FC =() => {
 
       <div className="compose" role="form" aria-label="Message composition">
         <ChatInput
+          sessionStatus={sessionStatus}
           status={status}
           scrollToBottom={scrollToBottom}
           tryConnect={tryConnect}

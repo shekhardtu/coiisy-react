@@ -2,7 +2,8 @@ import { getCurrentTimeStamp, local } from "@/lib/utils";
 import {
   WS_MESSAGE_TYPES
 } from "@/lib/webSocket.config";
-import { ChatMessageInterface, ServerSessionMessagesInterface } from "@/pages/public/coEditor/components/Editor.types";
+import { SessionStatusInterface } from "@/pages/public/chat/components/chat.types";
+import { ChatMessageInterface, ClientSessionAcceptedToJoinInterface, ClientSessionRejectedToJoinInterface, ServerSessionMessagesInterface, ServerUserRequestToJoinSessionToAdminInterface, ServerUserRequestToJoinSessionToGuestInterface, SessionHandlerActionInterface } from "@/pages/public/coEditor/components/Editor.types";
 import React, {
   createContext,
   useCallback,
@@ -16,18 +17,23 @@ import { v4 as uuidv4 } from "uuid";
 import { useWebSocket } from "./WebSocketContext";
 
 interface MessageWebSocketContextType {
+  sessionHandler: (action: SessionHandlerActionInterface, userId?: string) => void
 
   editMessage: (messageId: string, newContent: string) => void
   deleteMessage: (message: ChatMessageInterface) => void
   reactToMessage: (messageId: string, emoji: string) => void
   removeReaction: (messageId: string, emoji: string) => void
   messages: ChatMessageInterface[]
+  sessionStatus: SessionStatusInterface['sessionStatus']
+  setSessionStatus: React.Dispatch<React.SetStateAction<SessionStatusInterface['sessionStatus']>>
   setMessages: React.Dispatch<React.SetStateAction<ChatMessageInterface[]>>
   deduplicateMessages: (messages: ChatMessageInterface[]) => ChatMessageInterface[]
   lastMessageAction: React.MutableRefObject<string | null>
   removeMessage: (messageId: string) => void
   sendChatMessage: (content: string) => void
   updateSessionMessages: (messages: ChatMessageInterface[]) => void
+  userGuestRequestToJoinSession: ServerUserRequestToJoinSessionToAdminInterface | undefined
+  setUserGuestRequestToJoinSession: React.Dispatch<React.SetStateAction<ServerUserRequestToJoinSessionToAdminInterface | undefined>>
 }
 
 const MessageWebSocketContext =
@@ -43,6 +49,11 @@ export const MessageWebSocketProvider: React.FC<
   const { sendMessage: wsSendMessage, currentUser, sessionId, subscribe } = useWebSocket()
   const [messages, setMessages] = useState<ChatMessageInterface[]>([])
   const lastMessageAction = useRef<string | null>(null);
+
+  const [sessionStatus, setSessionStatus] = useState<SessionStatusInterface['sessionStatus']>("joined")
+  const [userGuestRequestToJoinSession, setUserGuestRequestToJoinSession] = useState<ServerUserRequestToJoinSessionToAdminInterface | undefined>(undefined);
+
+  // const [userRequestToJoinSessionQueue, setUserRequestToJoinSessionQueue] = useState<ClientUserRequestToJoinSessionInterface[]>([])
 
   const sendChatMessage = useCallback(
     (content: string) => {
@@ -112,7 +123,7 @@ export const MessageWebSocketProvider: React.FC<
 
       local("json", sessionId).set(`sessionIdentifier`, {
         ...sessionData,
-        guestIdentifier: {
+        userIdentifier: {
           ...currentUser,
           messages: newMessages,
         },
@@ -153,6 +164,59 @@ export const MessageWebSocketProvider: React.FC<
     },
     [currentUser, sessionId, wsSendMessage]
   )
+
+
+  const sessionHandler = useCallback((action: SessionHandlerActionInterface, guestId?: string) => {
+    let clientMessage: ClientSessionAcceptedToJoinInterface | ClientSessionRejectedToJoinInterface | undefined;
+// Add logic to add user to session if sessionStatus is requestedToJoin
+    if (action === "acceptedToJoin") {
+      clientMessage = {
+        type: WS_MESSAGE_TYPES.CLIENT_SESSION_ACCEPTED_TO_JOIN,
+        createdAt: getCurrentTimeStamp(),
+        timestamp: getCurrentTimeStamp(),
+        sessionId,
+        fullName: currentUser.fullName || "",
+        userId: currentUser.userId || "",
+        guestId: guestId || "",
+      }
+    } else if (action === "rejectedToJoin") {
+      clientMessage = {
+        createdAt: getCurrentTimeStamp(),
+        timestamp: getCurrentTimeStamp(),
+        type: WS_MESSAGE_TYPES.CLIENT_SESSION_REJECTED_TO_JOIN,
+        sessionId,
+        fullName: currentUser.fullName || "",
+        userId: currentUser.userId || "",
+        guestId: guestId || "",
+      }
+
+      // userGuestRequestToJoinSession
+
+
+    } else {
+      clientMessage = undefined;
+    }
+
+    setUserGuestRequestToJoinSession((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        type: "server_session_user_request_to_join_session_to_admin",
+        guests: prev.guests.filter((guest) => guest.userId !== guestId)
+      }
+    })
+
+    setSessionStatus("joined")
+
+    if (clientMessage) {
+      wsSendMessage(clientMessage)
+    }
+
+
+
+
+  }, [currentUser, sessionId, wsSendMessage])
+
 
   const deleteMessage = useCallback(
     (message: ChatMessageInterface) => {
@@ -246,6 +310,7 @@ export const MessageWebSocketProvider: React.FC<
 
   const handleSessionReloadMessages = useCallback((session: ServerSessionMessagesInterface) => {
     lastMessageAction.current = WS_MESSAGE_TYPES.SERVER_SESSION_MESSAGES;
+
     if (!session.messages) {
 
       setMessages([])
@@ -254,21 +319,13 @@ export const MessageWebSocketProvider: React.FC<
 
 
     setMessages((prevMessages) => {
-      console.log('prevMessages', prevMessages);
-      console.log('session.messages', session.messages);
-
-
       const allMessages = [...prevMessages, ...(session.messages || [])] as ChatMessageInterface[]
-
       const uniqueMessages = deduplicateMessages(allMessages)
-      console.log('allMessages', uniqueMessages[uniqueMessages.length - 1]);
-      console.log('session.messages', allMessages[allMessages.length - 1]);
-
         const sessionData = local("json", sessionId).get(`sessionIdentifier`);
 
         local("json", sessionId).set(`sessionIdentifier`, {
           ...sessionData,
-          guestIdentifier: {
+          userIdentifier: {
             ...currentUser,
             messages: uniqueMessages,
           },
@@ -321,6 +378,23 @@ export const MessageWebSocketProvider: React.FC<
     [setMessages]
   )
 
+  const handleJoinSessionByAdmin = useCallback((session: ServerUserRequestToJoinSessionToAdminInterface) => {
+    console.log('handleJoinSessionByAdmin', session);
+    setUserGuestRequestToJoinSession(session);
+
+    const request = "requestedToJoin"
+    setSessionStatus(request);
+
+  }, []);
+
+  const handleJoinSessionByGuest = useCallback((session:ServerUserRequestToJoinSessionToGuestInterface) => {
+    console.log('handleJoinSessionByGuest', session);
+    const request = "requestReceivedToJoin"
+    setSessionStatus(request)
+    console.count("handleJoinSessionByGuest")
+
+  }, [])
+
 
 
 
@@ -337,10 +411,22 @@ export const MessageWebSocketProvider: React.FC<
       handleServerChatMessages
     )
 
+    const unsubscribeJoinSessionToAdmin = subscribe(
+      WS_MESSAGE_TYPES.SERVER_USER_REQUEST_TO_JOIN_SESSION_TO_ADMIN,
+      handleJoinSessionByAdmin
+    )
+
+    const unsubscribeJoinSessionToGuest = subscribe(
+      WS_MESSAGE_TYPES.SERVER_USER_REQUEST_TO_JOIN_SESSION_TO_GUEST,
+      handleJoinSessionByGuest
+    )
+
     return () => {
       unsubscribeServerChatDelete()
       unsubscribeSessionReload()
       unsubscribeChat()
+      unsubscribeJoinSessionToAdmin()
+      unsubscribeJoinSessionToGuest()
     }
   }, [
     subscribe,
@@ -366,7 +452,12 @@ export const MessageWebSocketProvider: React.FC<
       deduplicateMessages,
       lastMessageAction,
       removeMessage,
-      updateSessionMessages
+      updateSessionMessages,
+      sessionStatus,
+      setSessionStatus,
+      sessionHandler,
+      userGuestRequestToJoinSession,
+      setUserGuestRequestToJoinSession
     }),
     [
       sendChatMessage,
@@ -379,7 +470,12 @@ export const MessageWebSocketProvider: React.FC<
       deduplicateMessages,
       lastMessageAction,
       removeMessage,
-      updateSessionMessages
+      updateSessionMessages,
+      sessionStatus,
+      setSessionStatus,
+      sessionHandler,
+      userGuestRequestToJoinSession,
+      setUserGuestRequestToJoinSession
     ]
   )
 

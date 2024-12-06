@@ -17,6 +17,7 @@ export interface ChatStatus {
   tryConnect: () => void;
 }
 
+
 export interface NavigatorInterface {
   virtualKeyboard?: {
     boundingRect: DOMRect;
@@ -24,5 +25,11 @@ export interface NavigatorInterface {
     addEventListener: (event: string, handler: () => void) => void;
     removeEventListener: (event: string, handler: () => void) => void;
   };
+}
+
+
+export interface SessionStatusInterface {
+  sessionHandler: (action: string) => void
+  sessionStatus: 'requestedToJoin' | 'requestReceivedToJoin' | 'joined'
 }
 
