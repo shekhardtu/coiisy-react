@@ -69,6 +69,10 @@ export const WS_CLIENT_MESSAGE_TYPES = {
   CLIENT_CHAT_REACT: 'client_chat_react' as const,
   CLIENT_CHAT_REACTION_REMOVE: 'client_chat_reaction_remove' as const,
   CLIENT_USER_APPROVE_TO_JOIN_SESSION: 'client_user_approve_to_join_session' as const,
+  CLIENT_SESSION_ACCEPTED_TO_JOIN: 'client_session_accepted_to_join' as const,
+  CLIENT_SESSION_REJECTED_TO_JOIN: 'client_session_rejected_to_join' as const,
+  CLIENT_USER_REQUEST_TO_JOIN_SESSION: 'client_user_request_to_join_session' as const,
+
 }
 
 
@@ -78,13 +82,16 @@ export const WS_SERVER_MESSAGE_TYPES = {
   SERVER_CHAT: 'server_chat' as const,
   SERVER_PONG: 'server_pong' as const,
   SERVER_USER_DISCONNECTED: 'server_user_disconnected' as const,
-  SERVER_SESSION_MESSAGES: 'server_session_messages' as const,
+
   SERVER_CHAT_EDIT: 'server_chat_edit' as const,
   SERVER_CHAT_DELETE: 'server_chat_delete' as const,
   SERVER_CHAT_REACT: 'server_chat_react' as const,
   SERVER_CHAT_REACTION_REMOVE: 'server_chat_reaction_remove' as const,
   SERVER_CHAT_REMOVE: 'server_chat_remove' as const,
   SERVER_USER_REQUEST_TO_JOIN_SESSION: 'server_user_request_to_join_session' as const,
+  SERVER_USER_REQUEST_TO_JOIN_SESSION_TO_ADMIN: 'server_session_user_request_to_join_session_to_admin' as const,
+  SERVER_USER_REQUEST_TO_JOIN_SESSION_TO_GUEST: 'server_session_user_request_to_join_session_to_guest' as const,
+  SERVER_SESSION_MESSAGES: 'server_session_messages' as const,
 }
 
 // Add these new type utilities
@@ -95,3 +102,6 @@ export const WS_MESSAGE_TYPES = {
   ...WS_CLIENT_MESSAGE_TYPES,
   ...WS_SERVER_MESSAGE_TYPES,
 } as const;
+
+// Make sure to update the type definition to include the new message type
+export type WebSocketMessageTypes = typeof WS_MESSAGE_TYPES[keyof typeof WS_MESSAGE_TYPES];

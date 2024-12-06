@@ -31,14 +31,13 @@ export interface OnlineUserInterface {
 export interface CurrentUserInterface {
   userId?: string;
   fullName?: string | null;
-  userName?: string;
   sessionId?: string;
   createdAt?: number | string | Date;
   updatedAt?: number | string | Date;
   color?: string;
   isTyping?: boolean;
   messages?: {
-    userName: string;
+    fullName: string;
     text: string;
     createdAt: string | number | Date;
     updatedAt: string | number | Date;
@@ -57,7 +56,7 @@ export interface SessionDataInterface {
     language?: string;
   };
   theme?: "light" | "dark";
-  guestIdentifier?: CurrentUserInterface;
+  userIdentifier?: CurrentUserInterface;
   chatWidth?: number;
   chatPosition?: "side" | "bottom";
   createdAt?: number | string | Date;
@@ -129,9 +128,36 @@ export interface ClientUserJoinedSessionInterface extends BaseMessage {
   fullName: string;
 }
 
+export interface ClientUserRequestToJoinSessionInterface extends BaseMessage {
+  type: typeof WS_MESSAGE_TYPES.CLIENT_USER_REQUEST_TO_JOIN_SESSION;
+  sessionId: string;
+  guests: {
+    userId: string;
+    fullName: string;
+  }[];
+}
+
+
+export interface ClientSessionAcceptedToJoinInterface extends BaseMessage {
+  type: typeof WS_MESSAGE_TYPES.CLIENT_SESSION_ACCEPTED_TO_JOIN;
+  sessionId: string;
+  userId: string;
+  fullName: string;
+  guestId: string;
+}
+
+export interface ClientSessionRejectedToJoinInterface extends BaseMessage {
+  type: typeof WS_MESSAGE_TYPES.CLIENT_SESSION_REJECTED_TO_JOIN;
+  sessionId: string;
+  userId: string;
+  fullName: string;
+  guestId: string;
+}
+
 export interface ServerUserJoinedSessionInterface extends BaseMessage {
   type: typeof WS_MESSAGE_TYPES.SERVER_USER_JOINED_SESSION;
-  participants: OnlineUserInterface[];
+  participants?: OnlineUserInterface[];
+  guests: OnlineUserInterface[];
   messages: ChatMessageInterface[];
 }
 
@@ -252,6 +278,22 @@ export interface ServerUserRequestToJoinSessionInterface extends BaseMessage {
   sessionId: string;
 }
 
+export interface ServerUserRequestToJoinSessionToAdminInterface {
+  type: typeof WS_MESSAGE_TYPES.SERVER_USER_REQUEST_TO_JOIN_SESSION_TO_ADMIN;
+
+  sessionId: string;
+  guests: {
+    userId: string;
+    fullName: string;
+  }[];
+}
+
+export interface ServerUserRequestToJoinSessionToGuestInterface {
+  type: typeof WS_MESSAGE_TYPES.SERVER_USER_REQUEST_TO_JOIN_SESSION_TO_GUEST;
+  userId: string;
+  fullName: string;
+  sessionId: string;
+}
 
 export type ServerMessage =
   | ServerChatMessageInterface
@@ -263,7 +305,10 @@ export type ServerMessage =
   | ServerChatDeleteInterface
   | ServerChatReactInterface
   | ServerChatReactionRemoveInterface
-  | ServerUserRequestToJoinSessionInterface;
+  | ServerUserRequestToJoinSessionInterface
+  | ServerUserRequestToJoinSessionToAdminInterface
+  | ServerUserRequestToJoinSessionToGuestInterface;
+
 
 export type ClientMessage =
   | ChatMessageInterface
@@ -276,4 +321,10 @@ export type ClientMessage =
   | ClientChatEditInterface
   | ClientChatDeleteInterface
   | ClientChatReactInterface
-  | ClientChatReactionRemoveInterface;
+  | ClientChatReactionRemoveInterface
+  | ClientSessionAcceptedToJoinInterface
+  | ClientSessionRejectedToJoinInterface
+  | ClientUserRequestToJoinSessionInterface;
+
+
+export type SessionHandlerActionInterface = "acceptedToJoin" | "rejectedToJoin" | "requestToJoin" | "leaveSession";

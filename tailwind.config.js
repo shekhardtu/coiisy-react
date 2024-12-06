@@ -107,6 +107,11 @@ module.exports = {
   			'message-add': {
   				'0%': { opacity: '0', transform: 'translateY(5px)' },
   				'100%': { opacity: '1', transform: 'translateY(0)' }
+  			},
+  			fadeOut: {
+  				'0%': { opacity: '1' },
+  				'50%': { opacity: '1' },
+  				'100%': { opacity: '0' }
   			}
   		},
   		animation: {
@@ -114,7 +119,8 @@ module.exports = {
   			'accordion-up': 'accordion-up 0.2s ease-out',
   			slideUpFade: 'slideUpFade 0.3s ease-out',
   			'message-remove': 'message-remove 0.2s ease-out forwards',
-  			'message-add': 'message-add 0.2s ease-out'
+  			'message-add': 'message-add 0.2s ease-out',
+  			fadeOut: 'fadeOut 2s ease-in-out forwards'
   		}
   	}
   },

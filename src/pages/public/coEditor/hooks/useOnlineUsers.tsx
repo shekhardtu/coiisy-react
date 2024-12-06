@@ -17,8 +17,7 @@ export const useOnlineUsers = ({
   minutes = wsConfig.onlineTimeoutInMinutes,
   sessionId,
 }: UseOnlineUsersProps) => {
-  const { status } = useWebSocket()
-
+  const { status, subscribe } = useWebSocket();
 
   const STORAGE_KEY = sessionId
   const [userHistory, setUserHistory] = useState<OnlineUserInterface[]>(() => {
@@ -30,10 +29,11 @@ export const useOnlineUsers = ({
     (userHistory: OnlineUserInterface[]) => {
       const now = new Date()
       const lastActive = subMinutes(now, minutes)
-      return userHistory.filter((user) => {
+      const activeUsers = userHistory.filter((user) => {
         const lastSeenAtDate = parseISO(user.lastSeenAt as string)
         return isAfter(lastSeenAtDate, lastActive)
       })
+      return activeUsers
     },
     [minutes]
   )
@@ -42,7 +42,8 @@ export const useOnlineUsers = ({
 
   useEffect(() => {
     if (status === "connected") {
-      setActiveUsers(getActiveUsers(userHistory))
+      const activeUsers = getActiveUsers(userHistory)
+      setActiveUsers(activeUsers)
     } else if (status === "disconnected") {
       setActiveUsers([])
     }
@@ -56,10 +57,8 @@ export const useOnlineUsers = ({
     setActiveUsers(getActiveUsers(userHistory))
   }, [userHistory, sessionId, STORAGE_KEY, getActiveUsers])
 
-  const { subscribe } = useWebSocket()
-
-  const handleUserJoined = (data: ServerUserJoinedSessionInterface) => {
-      const newUsers: OnlineUserInterface[] = data.participants
+  const handleUserJoined = useCallback((data: ServerUserJoinedSessionInterface) => {
+    const newUsers: OnlineUserInterface[] = data.guests
         .map((user) => ({
           initials: user.fullName?.slice(0, 2),
           fullName: user.fullName,
@@ -90,8 +89,9 @@ export const useOnlineUsers = ({
         })
         return merged.sort((a) => (a.isOnline ? -1 : 1))
       })
-  }
-  const handleUserLeft = (data: ServerUserDisconnectedInterface) => {
+  }, [])
+
+  const handleUserLeft = useCallback((data: ServerUserDisconnectedInterface) => {
 
       setUserHistory((prevUsers) =>
         prevUsers
@@ -107,35 +107,40 @@ export const useOnlineUsers = ({
           )
           .sort((a) => (a.isOnline ? -1 : 1))
       )
-  }
-
+  }, [])
 
   useEffect(() => {
+    // if (!sessionId || status !== 'connected') {
+    //   return;
+    // }
+
 
     const unsubscribeUserJoined = subscribe(
       WS_MESSAGE_TYPES.SERVER_USER_JOINED_SESSION,
-      handleUserJoined
-    )
+      (data: ServerUserJoinedSessionInterface) => {
+        handleUserJoined(data);
+      }
+    );
 
     const unsubscribeUserLeft = subscribe(
       WS_MESSAGE_TYPES.SERVER_USER_DISCONNECTED,
-      handleUserLeft
-    )
-
-
+      (data: ServerUserDisconnectedInterface) => {
+        handleUserLeft(data);
+      }
+    );
 
     return () => {
-      unsubscribeUserJoined()
-      unsubscribeUserLeft()
-    }
-  }, [])
+      unsubscribeUserJoined();
+      unsubscribeUserLeft();
+    };
+  }, [sessionId, status, subscribe, handleUserJoined, handleUserLeft]);
 
-  if (!sessionId) {
-    return {
-      activeUsers: [],
-      users: [],
-    }
-  }
+  // if (!sessionId) {
+  //   return {
+  //     activeUsers: [],
+  //     users: [],
+  //   }
+  // }
 
   return {
     activeUsers,

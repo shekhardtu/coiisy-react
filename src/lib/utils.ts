@@ -170,18 +170,18 @@ export const getDuration = (currentTimestamp: string | number | Date, previousTi
 
 
 export const buildCurrentUserObject = (
-  { userName, userId, personaColor }: { userName: string, userId: string, personaColor?: string }
+  { fullName, userId, personaColor }: { fullName: string, userId: string, personaColor?: string }
 ) => {
    const userObject = {
-    fullName: userName,
+    fullName: fullName,
     userId,
-    userName,
+    fullName,
     timestamp: Date.now(),
     color: personaColor || "#" + Math.floor(Math.random() * 16777215).toString(16),
     isTyping: false,
     messages: [
-        { userName: "User1", userId: "xxxxxx1", text: "Hello", timestamp: new Date().toISOString() },
-      { userName: "User2", userId: "xxxxxx2", text: "Hello", timestamp: new Date().toISOString() },
+        { fullName: "User1", userId: "xxxxxx1", text: "Hello", timestamp: new Date().toISOString() },
+      { fullName: "User2", userId: "xxxxxx2", text: "Hello", timestamp: new Date().toISOString() },
     ],
     cursorPosition: { line: 0, column: 0 },
    };
@@ -200,8 +200,8 @@ export const getCurrentUser = (sessionId: string | undefined) => {
   if (!sessionId) return null
   const sessionData =
     local("json", sessionId).get(`sessionIdentifier`) || {}
-  const { guestIdentifier } = sessionData
-  return guestIdentifier
+  const { userIdentifier } = sessionData
+  return userIdentifier
 };
 
 

@@ -12,15 +12,20 @@
 [x] Sync chat of session in case of  I went offline
 [x] Accessible UI, bottom widget can be hidden on mobile
 
-[] Show if user is typing
-[x] Show sent receipt
-[] Show read and delivery receipt
-[] Add offline message queue of editor, chat and collaboration
-[] User can initiate an anonymous chat or join the existing chat
-[] Enter their name or use the default userName as fullName
-[] Add session validity of 15 day and remove after a certain period, if no activity
 
-[] Move active users to the top of the list of chat banner
+[x] Show sent receipt
+[x] Show read and delivery receipt
+[x] Move active users to the top of the list of chat banner
+[] User can initiate an anonymous chat or join the existing chat
+[] Enter their name or use the default fullName as fullName
+[] Add session validity of 15 day and remove the chat if not claimed of no activity
+[] Add offline support, to the add the chat to the queue until the user is online
+[] Show if user is typing
+[] Allow user to accept or deny the chat request
+[] Mark deleted a chat from the list, it should delete for all users
+[] Deleted chat can be removed from the queue for all users
+[] User online status is not consistent, need to find the root cause and fix it
+
 
 
 
