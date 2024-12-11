@@ -398,8 +398,13 @@ export const MessageWebSocketProvider: React.FC<
 
 
 
+
   useEffect(() => {
-    const unsubscribeServerChatDelete = subscribe(WS_MESSAGE_TYPES.SERVER_CHAT_DELETE, handleServerChatDelete);
+    const unsubscribeServerChatDelete = subscribe(
+      WS_MESSAGE_TYPES.SERVER_CHAT_DELETE,
+      handleServerChatDelete
+    );
+
 
     const unsubscribeSessionReload = subscribe(
       WS_MESSAGE_TYPES.SERVER_SESSION_MESSAGES,

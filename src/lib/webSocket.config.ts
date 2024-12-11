@@ -72,7 +72,7 @@ export const WS_CLIENT_MESSAGE_TYPES = {
   CLIENT_SESSION_ACCEPTED_TO_JOIN: 'client_session_accepted_to_join' as const,
   CLIENT_SESSION_REJECTED_TO_JOIN: 'client_session_rejected_to_join' as const,
   CLIENT_USER_REQUEST_TO_JOIN_SESSION: 'client_user_request_to_join_session' as const,
-
+  CLIENT_USER_HANDLE_AUTO_JOIN: 'client_user_handle_auto_join' as const,
 }
 
 

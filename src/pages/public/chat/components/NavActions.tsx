@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { useWebSocket } from "@/contexts/WebSocketContext";
 import { cn } from "@/lib/utils";
+import { WS_CLIENT_MESSAGE_TYPES } from "@/lib/webSocket.config";
 import {
   FileText,
   Link,
@@ -21,10 +22,12 @@ import {
 import * as React from "react";
 import { useNavigate } from "react-router-dom";
 import useEditorContext from "../../coEditor/hooks/useEditor.contexthook";
+import { useOnlineUsers } from "../../coEditor/hooks/useOnlineUsers";
 import { ConfirmModal } from "./ConfirmModal";
 
 // Add this type definition before the data array
 type MenuItem = {
+  isShow?: boolean
   label: string;
   icon: React.ComponentType;
   onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
@@ -37,9 +40,10 @@ export function NavActions() {
   const [isOpen, setIsOpen] = React.useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
   const { theme, handleThemeChange } = useEditorContext();
-  const { status, disconnect, sessionId, tryConnect } = useWebSocket();
+  const { status, disconnect, sessionId, tryConnect, sendMessage } = useWebSocket();
   const navigate = useNavigate()
 
+  const { isUserAdmin, autoJoin } = useOnlineUsers({ sessionId: sessionId! })
 
   const handleClearSession = React.useCallback(async () => {
     if (status === "connected") {
@@ -47,6 +51,7 @@ export function NavActions() {
     }
     navigate(`/clear/${sessionId}`);
   }, [status, disconnect, navigate, sessionId]);
+
 
   const [connectionLabel, setConnectionLabel] = React.useState("Disconnect Session");
 
@@ -68,7 +73,20 @@ export function NavActions() {
     }
   }, [status]);
 
-  const [autoJoinEnabled, setAutoJoinEnabled] = React.useState(false);
+  const [autoJoinEnabled, setAutoJoinEnabled] = React.useState(autoJoin);
+
+  React.useEffect(() => {
+    setAutoJoinEnabled(autoJoin);
+  }, [autoJoin]);
+
+  const handleAutoJoin = (checked: boolean) => {
+    setAutoJoinEnabled(checked);
+    sendMessage({
+      type: WS_CLIENT_MESSAGE_TYPES.CLIENT_USER_HANDLE_AUTO_JOIN,
+      sessionId: sessionId!,
+      autoJoin: checked,
+    });
+  }
 
   const AutoJoinSwitch = () => {
     return (
@@ -76,6 +94,7 @@ export function NavActions() {
         checked={autoJoinEnabled}
         onCheckedChange={(checked) => {
           setAutoJoinEnabled(checked);
+          handleAutoJoin(checked);
         }}
         property="autoJoinEnabled"
         className={cn(
@@ -94,6 +113,7 @@ export function NavActions() {
   const data: MenuItem[][] = [
     [
       {
+        isShow: true,
         label: "Custom Chat Url",
         icon: Settings2,
         onClick: () => console.log("Customize"),
@@ -111,6 +131,7 @@ export function NavActions() {
     ],
     [
       {
+        isShow: isUserAdmin,
         label: "Auto Join",
         icon: UserPlus,
         onClick: (e) => e.stopPropagation(),
@@ -161,8 +182,9 @@ export function NavActions() {
                   {groupIndex > 0 && <Separator className="my-1" />}
                   <div className="flex flex-col gap-1">
                     {group.map((item, itemIndex) => (
-                      <Button
-                        key={itemIndex}
+                      (item.isShow === undefined || item.isShow === true) && (
+                        <Button
+                          key={itemIndex}
                         variant="ghost"
                         className={cn(
                           "w-full justify-start gap-2 px-1.5 py-1 text-sm relative group",
@@ -195,6 +217,7 @@ export function NavActions() {
                           </span>
                         )}
                       </Button>
+                      )
                     ))}
                   </div>
                 </React.Fragment>
