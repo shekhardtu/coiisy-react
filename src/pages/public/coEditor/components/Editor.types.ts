@@ -23,6 +23,7 @@ export interface OnlineUserInterface {
   initials: string;
   fullName: string;
   isOnline: boolean;
+  isAdmin?: boolean;
   connectedAt: number | string | Date;
   lastSeenAt: number | string | Date;
   isShow?: boolean;
@@ -156,9 +157,17 @@ export interface ClientSessionRejectedToJoinInterface extends BaseMessage {
 
 export interface ServerUserJoinedSessionInterface extends BaseMessage {
   type: typeof WS_MESSAGE_TYPES.SERVER_USER_JOINED_SESSION;
+  autoJoin?: boolean;
   participants?: OnlineUserInterface[];
   guests: OnlineUserInterface[];
   messages: ChatMessageInterface[];
+}
+
+export interface ClientUserHandleAutoJoinInterface extends BaseMessage {
+  type: typeof WS_MESSAGE_TYPES.CLIENT_USER_HANDLE_AUTO_JOIN;
+  sessionId: string;
+  userId?: string;
+  autoJoin?: boolean;
 }
 
 export interface ClientUserDisconnectedInterface extends BaseMessage {
@@ -324,7 +333,8 @@ export type ClientMessage =
   | ClientChatReactionRemoveInterface
   | ClientSessionAcceptedToJoinInterface
   | ClientSessionRejectedToJoinInterface
-  | ClientUserRequestToJoinSessionInterface;
+  | ClientUserRequestToJoinSessionInterface
+  | ClientUserHandleAutoJoinInterface;
 
 
 export type SessionHandlerActionInterface = "acceptedToJoin" | "rejectedToJoin" | "requestToJoin" | "leaveSession";
