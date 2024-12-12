@@ -5,9 +5,10 @@ import { cn, local } from "@/lib/utils";
 import { WS_MESSAGE_TYPES, wsConfig } from "@/lib/webSocket.config";
 import React, { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { useParams } from "react-router-dom";
-import "../cat/style.css";
+
 import { CurrentUserInterface } from "../coEditor/components/Editor.types";
 import { useOnlineUsers } from "../coEditor/hooks/useOnlineUsers";
+import "./chat.style.css";
 import ChatHeader from "./components/ChatHeader";
 import ChatInput from "./components/ChatInput";
 import ChatMessages from "./components/ChatMessages";
@@ -161,7 +162,7 @@ const ChatPage: React.FC =() => {
 
 
   return (
-    <div className="chat_container" role="main" aria-label="Chat interface">
+    <div className="chat_container overflow-hidden" role="main" aria-label="Chat interface">
       <ChatHeader {...headerProps} />
 
       <div
