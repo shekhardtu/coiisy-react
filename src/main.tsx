@@ -20,10 +20,12 @@ client.setConfig({
   baseUrl: baseUrl,
 })
 
+if (import.meta.env.VITE_ENV !== "development") {
 posthog.init("phc_14RTykDx36LKcstnpChxFgvWmthHCH1GCSOSxRqcE0n", {
   api_host: "https://us.i.posthog.com",
-  person_profiles: "always", // or 'always' to create profiles for anonymous users as well
-})
+    person_profiles: "always", // or 'always' to create profiles for anonymous users as well
+  })
+}
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

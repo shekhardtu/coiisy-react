@@ -32,7 +32,7 @@ export default function PrivateLayout() {
 
   return (
     <div className="flex relative w-full">
-    <div className={`grid transition-all duration-300 relative w-full ${sidebarExpanded ? 'ml-[240px]' : 'ml-[56px]'} outline outline-1 outline-gray-200`}>
+    <div className={`grid transition-all duration-300 relative w-full ${sidebarExpanded ? 'ml-[240px]' : 'ml-[56px]'}`}>
 
       <Sidebar
         expanded={sidebarExpanded}
