@@ -26,9 +26,6 @@ const ChatMessage = React.memo(
     activeUsers: OnlineUserInterface[]
     }) => {
 
-    // const longPressHandlers = useLongPress(() => {
-    //   setIsOpen(!isOpen)
-    // })
     const isOwnMessage = message.userId === currentUser?.userId
     const [isOpen, setIsOpen] = useState(false)
     const [user, setUser] = useState<OnlineUserInterface>()

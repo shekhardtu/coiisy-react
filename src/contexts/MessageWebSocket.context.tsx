@@ -106,6 +106,7 @@ export const MessageWebSocketProvider: React.FC<
     lastMessageAction.current = WS_MESSAGE_TYPES.SERVER_CHAT;
     const sessionData = local("json", sessionId).get(`sessionIdentifier`);
 
+    if(message.sessionId !== sessionId) return;
     setMessages((prevMessages) => {
       let newMessages
       const existingMessageIndex = prevMessages.findIndex(
@@ -342,6 +343,8 @@ export const MessageWebSocketProvider: React.FC<
 
   const updateSessionMessages = useCallback((messages: ChatMessageInterface[]) => {
 
+    if (messages.some(message => message.sessionId !== sessionId)) return;
+
     setMessages(prevMessages => {
 
       // update props of previous messages
@@ -366,6 +369,7 @@ export const MessageWebSocketProvider: React.FC<
   const handleServerChatDelete = useCallback(
     (message: ChatMessageInterface) => {
       lastMessageAction.current = WS_MESSAGE_TYPES.SERVER_CHAT_DELETE;
+      if(message.sessionId !== sessionId) return;
 
       setMessages(prevMessages =>
         prevMessages.map(msg =>

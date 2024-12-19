@@ -27,6 +27,7 @@ export interface OnlineUserInterface {
   connectedAt: number | string | Date;
   lastSeenAt: number | string | Date;
   isShow?: boolean;
+  sessionId?: string;
 }
 
 export interface CurrentUserInterface {
@@ -161,6 +162,7 @@ export interface ServerUserJoinedSessionInterface extends BaseMessage {
   participants?: OnlineUserInterface[];
   guests: OnlineUserInterface[];
   messages: ChatMessageInterface[];
+  sessionId?: string;
 }
 
 export interface ClientUserHandleAutoJoinInterface extends BaseMessage {

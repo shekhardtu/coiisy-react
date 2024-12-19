@@ -22,16 +22,33 @@ export const useOnlineUsers = ({
   const [isUserAdmin, setIsUserAdmin] = useState<boolean>(false)
 
   const STORAGE_KEY = sessionId
-  const [userHistory, setUserHistory] = useState<OnlineUserInterface[]>(() => {
-    const stored = local("json", STORAGE_KEY).get("online_users")
-    return stored ? stored : []
-  })
+  const getStoredUsers = () => {
+    const storedSession = local("json", STORAGE_KEY).get("sessionIdentifier")
+    return storedSession?.onlineUsers?.filter((user: OnlineUserInterface) =>
+      user.sessionId === sessionId
+    ) || []
+  }
+
+  const [userHistory, setUserHistory] = useState<OnlineUserInterface[]>(getStoredUsers)
+
+  const saveUsersToStorage = useCallback((users: OnlineUserInterface[]) => {
+    const storedSession = local("json", STORAGE_KEY).get("sessionIdentifier")
+    const otherSessionUsers = (storedSession?.onlineUsers || []).filter(
+      (user: OnlineUserInterface) => user.sessionId !== sessionId
+    )
+
+    local("json", STORAGE_KEY).set("sessionIdentifier", {
+      ...storedSession,
+      onlineUsers: [...otherSessionUsers, ...users]
+    })
+  }, [STORAGE_KEY, sessionId])
 
   const getActiveUsers = useCallback(
     (userHistory: OnlineUserInterface[]) => {
       const now = new Date()
       const lastActive = subMinutes(now, minutes)
-      const activeUsers = userHistory.filter((user) => {
+
+      const activeUsers = userHistory?.filter((user) => {
         const lastSeenAtDate = parseISO(user.lastSeenAt as string)
         return isAfter(lastSeenAtDate, lastActive)
       })
@@ -46,7 +63,8 @@ export const useOnlineUsers = ({
 
 
   useEffect(() => {
-    if (status === "connected") {
+
+    if (status === "connected" && userHistory.length > 0) {
       const activeUsers = getActiveUsers(userHistory)
       setActiveUsers(activeUsers)
     } else if (status === "disconnected") {
@@ -55,12 +73,16 @@ export const useOnlineUsers = ({
   }, [getActiveUsers, status, userHistory])
 
   useEffect(() => {
-    if (!sessionId) {
-      return
-    }
-    local("json", STORAGE_KEY).set("online_users", userHistory)
-    setActiveUsers(getActiveUsers(userHistory))
-  }, [userHistory, sessionId, STORAGE_KEY, getActiveUsers])
+    if (!sessionId) return
+
+    const currentSessionUsers = userHistory.map(user => ({
+      ...user,
+      sessionId
+    }))
+
+    saveUsersToStorage(currentSessionUsers)
+    setActiveUsers(getActiveUsers(currentSessionUsers))
+  }, [userHistory, sessionId, getActiveUsers, saveUsersToStorage])
 
   useEffect(() => {
     // Check admin status whenever userHistory changes
@@ -79,8 +101,14 @@ export const useOnlineUsers = ({
         setAutoJoin(true)
       }
 
+      if(data.sessionId !== sessionId){
+        return
+      }
+
       const newUsers: OnlineUserInterface[] = data.guests
+        .filter(user => user.sessionId === sessionId)
         .map((user) => ({
+          ...user,
           initials: user.fullName?.slice(0, 2),
           fullName: user.fullName,
           isOnline: user.isOnline,
@@ -92,11 +120,13 @@ export const useOnlineUsers = ({
         }))
         .sort((a) => (a.isOnline ? -1 : 1))
 
+
+
       setUserHistory((prev) => {
         const merged = [...prev]
         newUsers.forEach((newUser) => {
           const existingIndex = merged.findIndex(
-            (u) => u.userId === newUser.userId
+            (u) => u.userId === newUser.userId && u.sessionId === sessionId
           )
           if (existingIndex >= 0) {
             merged[existingIndex] = {
@@ -105,6 +135,7 @@ export const useOnlineUsers = ({
               connectedAt: newUser.connectedAt,
               lastSeenAt: newUser.lastSeenAt,
               isAdmin: newUser.isAdmin,
+              sessionId
             }
           } else {
             merged.push(newUser)
@@ -113,11 +144,12 @@ export const useOnlineUsers = ({
         return merged.sort((a) => (a.isOnline ? -1 : 1))
       })
     },
-    [STORAGE_KEY]
+    [sessionId]
   )
 
   const handleUserLeft = useCallback(
     (data: ServerUserDisconnectedInterface) => {
+
       setUserHistory((prevUsers) =>
         prevUsers
           .map((u) =>
@@ -127,6 +159,7 @@ export const useOnlineUsers = ({
                   lastSeenAt: data.lastSeenAt,
                   isOnline: false,
                   isShow: true,
+                  sessionId
                 }
               : u
           )
@@ -137,9 +170,6 @@ export const useOnlineUsers = ({
   )
 
   useEffect(() => {
-    // if (!sessionId || status !== 'connected') {
-    //   return;
-    // }
 
     const unsubscribeUserJoined = subscribe(
       WS_MESSAGE_TYPES.SERVER_USER_JOINED_SESSION,
@@ -161,12 +191,7 @@ export const useOnlineUsers = ({
     }
   }, [sessionId, status, subscribe, handleUserJoined, handleUserLeft])
 
-  // if (!sessionId) {
-  //   return {
-  //     activeUsers: [],
-  //     users: [],
-  //   }
-  // }
+
 
   return {
     activeUsers,
