@@ -7,8 +7,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { useViewport } from "@/contexts/Viewport.context";
 import { useToast } from "@/hooks/use-toast";
+import { useViewport } from "@/hooks/useViewport.hook";
 import { cn, sanitizeChannelId } from "@/lib/utils";
 import { ArrowLeft, Copy } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -96,7 +96,7 @@ export function JoinSessionModal({
   const [colorConfig, setColorConfig] = useState(colorConfigs[0]);
   const { toast } = useToast();
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const { keyboardVisible, isKeyboardSupported } = useViewport();
+  const { keyboardVisible, isKeyboardSupported, isMobile } = useViewport();
 
   useEffect(() => {
     if (isOpen) {
@@ -152,15 +152,30 @@ export function JoinSessionModal({
       <div className={`fixed inset-0 ${colorConfig.overlay} backdrop-blur-sm`} />
       <DialogContent
         className={cn(
-          `mx-auto w-[90%] p-0 overflow-hidden ${colorConfig.glassEffect} shadow-lg rounded-2xl gap-0`,
-          keyboardVisible && !isKeyboardSupported && "mb-[env(keyboard-inset-height,0)]"
+          `w-full max-w-lg ${colorConfig.glassEffect} shadow-lg`,
+          "p-0",
+          "fixed left-1/2 -translate-x-1/2",
+          isMobile ?
+            cn(
+              "bottom-0 rounded-t-2xl",
+              "h-fit max-h-[85vh]",
+              keyboardVisible && [
+                "bottom-0",
+                "h-auto",
+                "overflow-y-auto"
+              ]
+            ) :
+            "bottom-8 rounded-2xl h-fit",
+          keyboardVisible && !isKeyboardSupported && "mb-[env(keyboard-inset-height,0)]",
+          "transition-[transform,height] duration-300",
+          "overscroll-contain touch-none z-50"
         )}
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
         onInteractOutside={(e) => e.preventDefault()}
         closeButton={false}
       >
-        <div className={`px-6 py-4 ${colorConfig.background}`}>
+        <div className={`px-6 py-4 flex flex-col justify-between ${colorConfig.background}`}>
           <DialogHeader>
             <DialogTitle className="sr-only">
               Join Session - {sessionName}
@@ -169,14 +184,12 @@ export function JoinSessionModal({
               Enter your display name to join the collaborative session
             </DialogDescription>
             <div className="flex flex-col">
-
-
               <div className="text-start">
                 <div
                   className={`text-base sm:text-2xl mb-1 ${colorConfig.textColor} group cursor-pointer`}
                   onClick={copyToClipboard}
                 >
-                Joining  <span className="font-bold">#{sessionName}</span>
+                  Joining <span className="font-bold">#{sessionName}</span>
                   <Copy className="ml-2 h-4 w-4 inline-block opacity-30 group-hover:opacity-100 transition-opacity" />
                 </div>
                 <div className={`text-sm ${colorConfig.textColor} opacity-80 flex`}>
@@ -188,8 +201,8 @@ export function JoinSessionModal({
         </div>
 
         <div className={cn(
-          "px-4 py-5 sm:p-6 bg-white/95 backdrop-blur-md flex flex-col",
-          keyboardVisible && !isKeyboardSupported && "pb-14"
+          "px-4 py-5",
+          "bg-white/95 backdrop-blur-md"
         )}>
           <form onSubmit={handleSubmit} className="space-y-1 w-full flex flex-col justify-start">
               <label
@@ -288,10 +301,12 @@ export function JoinSessionModal({
 
           </form>
 
-          <div className={cn(
-            "text-sm text-gray-500 mt-6 flex items-center justify-start gap-1 group",
-            "sm:relative sm:mt-6 fixed top-4 left-4 z-50"
-          )}>
+          {
+            !isMobile && (
+              <div className={cn(
+                "text-sm text-gray-500 mt-6 flex items-center justify-start gap-1 group",
+                "sm:relative sm:mt-6 fixed top-4 left-4 z-50"
+              )}>
             <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
             <Link
               to="/"
@@ -300,7 +315,9 @@ export function JoinSessionModal({
             >
               Back to home
             </Link>
-          </div>
+            </div>
+            )
+          }
 
           <ConfirmModal
             variant="destructive"

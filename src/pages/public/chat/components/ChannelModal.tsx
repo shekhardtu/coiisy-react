@@ -6,7 +6,7 @@ import {
   DialogTitle
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { useViewport } from "@/contexts/Viewport.context";
+import { useViewport } from "@/hooks/useViewport.hook";
 import { cn, sanitizeChannelId } from "@/lib/utils";
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -91,7 +91,7 @@ export function ChannelModal({
   const [colorConfig, setColorConfig] = useState(colorConfigs[0]);
   const [channelId, setChannelId] = useState("");
 
-  const { keyboardVisible, isKeyboardSupported } = useViewport();
+  const { keyboardVisible, isKeyboardSupported, isMobile } = useViewport();
 
   useEffect(() => {
     if (isOpen) {
@@ -123,33 +123,36 @@ export function ChannelModal({
     <Dialog open={isOpen} onOpenChange={() => {}} modal={true}>
       <div className={`fixed inset-0 ${colorConfig.overlay} backdrop-blur-sm`} />
       <DialogContent
-        className={cn(`
-          fixed
-          bottom-0
-          left-1/2
-          -translate-x-1/2
-          w-full
-          max-w-lg
-          p-0
-          overflow-hidden
-          ${colorConfig.glassEffect}
-          shadow-lg
-          rounded-t-2xl
-          md:rounded-2xl
-          md:bottom-8
-          gap-0
-          relative
-          animate-in
-          slide-in-from-bottom
-          duration-300
-        `,
-        keyboardVisible && !isKeyboardSupported && "mb-[env(keyboard-inset-height,0)]"
+        className={cn(
+          `w-full max-w-lg ${colorConfig.glassEffect} shadow-lg p-0`,
+
+          "fixed left-1/2 -translate-x-1/2",
+
+          isMobile ?
+            cn(
+              "top-1/2 -translate-y-1/2",
+              "rounded-2xl",
+              keyboardVisible && [
+                "top-0 translate-y-0",
+                "h-auto max-h-[100dvh]",
+                "overflow-y-auto"
+              ]
+            ) :
+            cn(
+              "bottom-8",
+              "rounded-2xl"
+            ),
+
+          "transition-all duration-300",
+          keyboardVisible && !isKeyboardSupported && "mb-[env(keyboard-inset-height,0)]",
+          "z-50"
         )}
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
         onInteractOutside={(e) => e.preventDefault()}
         closeButton={false}
       >
+
         <button
           onClick={onClose}
           className={`
