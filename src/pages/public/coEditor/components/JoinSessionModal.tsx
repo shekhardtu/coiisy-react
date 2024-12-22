@@ -7,10 +7,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { useViewport } from "@/contexts/Viewport.context";
 import { useToast } from "@/hooks/use-toast";
-import { Copy, Users } from "lucide-react";
+import { cn, sanitizeChannelId } from "@/lib/utils";
+import { ArrowLeft, Copy } from "lucide-react";
 import { useEffect, useState } from "react";
-
+import { Link } from "react-router-dom";
+import { generateUsername } from "unique-username-generator";
+import { ConfirmModal } from "../../chat/components/ConfirmModal";
 const colorConfigs = [
   {
     background: 'bg-pink-100',
@@ -91,6 +95,8 @@ export function JoinSessionModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [colorConfig, setColorConfig] = useState(colorConfigs[0]);
   const { toast } = useToast();
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const { keyboardVisible, isKeyboardSupported } = useViewport();
 
   useEffect(() => {
     if (isOpen) {
@@ -109,6 +115,11 @@ export function JoinSessionModal({
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleBackClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setShowConfirmDialog(true);
   };
 
   if (!isOpen) return null;
@@ -131,26 +142,25 @@ export function JoinSessionModal({
     }
   };
 
+  const generateRandomUsername = () => {
+    const username = generateUsername('-', 2);
+    setFullName(username);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={() => {}} modal={true}>
       <div className={`fixed inset-0 ${colorConfig.overlay} backdrop-blur-sm`} />
       <DialogContent
-        className={`
-          mx-auto
-          w-[90%] sm:w-[425px]
-          p-0
-          overflow-hidden
-          ${colorConfig.glassEffect}
-          shadow-lg
-          rounded-2xl
-          gap-0
-        `}
+        className={cn(
+          `mx-auto w-[90%] p-0 overflow-hidden ${colorConfig.glassEffect} shadow-lg rounded-2xl gap-0`,
+          keyboardVisible && !isKeyboardSupported && "mb-[env(keyboard-inset-height,0)]"
+        )}
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
         onInteractOutside={(e) => e.preventDefault()}
         closeButton={false}
       >
-        <div className={`px-4 py-6 sm:p-8 ${colorConfig.background}`}>
+        <div className={`px-6 py-4 ${colorConfig.background}`}>
           <DialogHeader>
             <DialogTitle className="sr-only">
               Join Session - {sessionName}
@@ -158,24 +168,18 @@ export function JoinSessionModal({
             <DialogDescription className="sr-only">
               Enter your display name to join the collaborative session
             </DialogDescription>
-            <div className="flex flex-col items-center gap-4">
-              <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-2xl bg-white/30 backdrop-blur-sm flex items-center justify-center">
-                <Users className={`w-7 h-7 sm:w-10 sm:h-10 ${colorConfig.textColor}`} />
-              </div>
+            <div className="flex flex-col">
 
-              <div className="text-center">
-                <h2
-                  className={`text-lg  sm:text-2xl font-bold mb-2 ${colorConfig.textColor} group cursor-pointer`}
+
+              <div className="text-start">
+                <div
+                  className={`text-base sm:text-2xl mb-1 ${colorConfig.textColor} group cursor-pointer`}
                   onClick={copyToClipboard}
                 >
-                  {sessionName}
-                  <Copy className="ml-2 h-4 w-4 inline-block opacity-0 group-hover:opacity-100 transition-opacity" />
-                </h2>
-                <div className={`text-sm ${colorConfig.textColor} opacity-80 flex items-center justify-center gap-2`}>
-                  <span className="relative flex h-2 w-2">
-                    <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${colorConfig.textColor} opacity-75`}></span>
-                    <span className={`relative inline-flex rounded-full h-2 w-2 ${colorConfig.textColor}`}></span>
-                  </span>
+                Joining  <span className="font-bold">#{sessionName}</span>
+                  <Copy className="ml-2 h-4 w-4 inline-block opacity-30 group-hover:opacity-100 transition-opacity" />
+                </div>
+                <div className={`text-sm ${colorConfig.textColor} opacity-80 flex`}>
                   {onlineCount} online • {totalCount} members
                 </div>
               </div>
@@ -183,29 +187,51 @@ export function JoinSessionModal({
           </DialogHeader>
         </div>
 
-        <div className="px-4 py-5 sm:p-6 bg-white/95 backdrop-blur-md">
-          <form onSubmit={handleSubmit} className="space-y-4 w-full flex flex-col items-center">
-
+        <div className={cn(
+          "px-4 py-5 sm:p-6 bg-white/95 backdrop-blur-md flex flex-col",
+          keyboardVisible && !isKeyboardSupported && "pb-14"
+        )}>
+          <form onSubmit={handleSubmit} className="space-y-1 w-full flex flex-col justify-start">
               <label
                 htmlFor="name"
-                className={`block mb-2 text-sm font-medium ${colorConfig.textColor}`}
+                className={`block text-sm font-medium ${colorConfig.textColor}`}
               >
                 Your Display Name
               </label>
-              <div className="flex flex-col gap-3 w-full">
+            <div className="flex flex-col gap-3 w-full">
+
+              <div className="flex gap-3 w-full sm:flex-row flex-col">
+            <div className="relative flex-grow flex-1">
+                    <span className={`
+                      absolute
+                      left-4
+                      top-1/2
+                      -translate-y-1/2
+                      text-lg
+                      font-medium
+                      ${colorConfig.textColor}
+                      opacity-70
+                    `}>
+                      @
+                    </span>
                 <Input
                   id="name"
                   placeholder="Enter your name..."
                   value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
+                  onChange={(e) => {
+                    setFullName(sanitizeChannelId(e.target.value));
+                  }}
                   className={`
                     w-full
                     h-11
                     px-4
+                    pl-10
+                    pr-[100px]
                     text-base
                     ${colorConfig.textColor}
                     bg-white/90
                     border
+                    !text-lg
                     rounded-lg
                     focus:ring-2
                     focus:ring-${colorConfig.background.split('-')[1]}-200
@@ -214,19 +240,36 @@ export function JoinSessionModal({
                   autoFocus
                   required
                 />
-                <Button
-                  type="submit"
+                <button
+                  type="button"
+                  onClick={generateRandomUsername}
                   className={`
-                    w-full
-                    h-11
+                    absolute
+                    right-3
+                    top-1/2
+                    -translate-y-1/2
+                    px-3
+                    py-1
+                    text-sm
+                    font-medium
+                    rounded-md
                     ${colorConfig.background}
                     hover:opacity-90
                     transition-all
-                    text-base
-                    font-medium
-                    rounded-lg
                     ${colorConfig.buttonTextColor}
                   `}
+                >
+                  Generate
+                </button>
+                </div>
+                <div className="flex-shrink-0">
+                <Button
+                  type="submit"
+                  className={cn(
+                    `w-full h-11 ${colorConfig.background} hover:opacity-90 transition-all`,
+                    `text-base font-medium rounded-lg ${colorConfig.buttonTextColor}`,
+                    "sm:w-auto"
+                  )}
                   disabled={!fullName.trim() || isSubmitting}
                 >
                   {isSubmitting ? (
@@ -237,10 +280,41 @@ export function JoinSessionModal({
                   ) : (
                     "Join Session"
                   )}
-                </Button>
-              </div>
+                  </Button>
+                  </div>
+                </div>
+            </div>
+
 
           </form>
+
+          <div className={cn(
+            "text-sm text-gray-500 mt-6 flex items-center justify-start gap-1 group",
+            "sm:relative sm:mt-6 fixed top-4 left-4 z-50"
+          )}>
+            <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
+            <Link
+              to="/"
+              onClick={handleBackClick}
+              className="flex items-center hover:text-gray-700 transition-colors"
+            >
+              Back to home
+            </Link>
+          </div>
+
+          <ConfirmModal
+            variant="destructive"
+            isOpen={showConfirmDialog}
+
+            onClose={() => setShowConfirmDialog(false)}
+            description="Going back to home will end your current session. This action cannot be undone."
+            title="Are you sure you want to leave?"
+            onConfirm={async () => {
+              setShowConfirmDialog(false);
+              window.location.href = '/';
+            }}
+
+          />
         </div>
       </DialogContent>
     </Dialog>
