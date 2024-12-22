@@ -11,9 +11,10 @@ import {
   Users,
   Zap
 } from 'lucide-react';
-import React, { useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { v4 as uuidv4 } from 'uuid';
+import React, { useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { ChannelModal } from './components/ChannelModal';
+
 const features = [
   {
     icon: <MessageSquare className="w-8 h-8" />,
@@ -137,7 +138,6 @@ const FooterSection = () => {
 
 
 const ChatLandingPage: React.FC = () => {
-  const navigate = useNavigate();
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, {
     stiffness: 100,
@@ -220,17 +220,27 @@ const ChatLandingPage: React.FC = () => {
           Welcome to <span className="text-blue-600">Coiisy</span>
         </h1>
         <p className="text-xl md:text-2xl text-gray-700 max-w-2xl mx-auto leading-relaxed mb-12">
-          Experience the next generation of secure, real-time communication.
-          Built for teams, loved by everyone.
+          Experience the next generation of secure, anonymous, real-time communication.
+          Built for groups, worked for everyone.
         </p>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+        <div className="flex items-center justify-center gap-4">
+          {/* <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          onClick={handleGetStarted}
+          className="bg-gray-200  px-8 py-4 rounded-full hover:bg-gray-300 transition-all duration-300 font-semibold text-lg shadow-md text-gray-600"
+        >
+          Request for feature
+        </motion.button> */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
           onClick={handleGetStarted}
           className="bg-blue-600 text-white px-8 py-4 rounded-full hover:bg-blue-700 transition-all duration-300 font-semibold text-lg shadow-md"
         >
-          Get Started Free
-        </motion.button>
+            Get Started Free
+          </motion.button>
+        </div>
       </motion.div>
     </section>
   );
@@ -398,10 +408,12 @@ const ChatLandingPage: React.FC = () => {
       </div>
     </section>
   );
+  const [showSessionInput, setShowSessionInput] = useState(false);
 
   const handleGetStarted = () => {
-    const sessionId = uuidv4();
-    navigate(`/${sessionId}`);
+    // const sessionId = uuidv4();
+    // navigate(`/${sessionId}`);
+    setShowSessionInput(true);
   };
 
 
@@ -409,7 +421,11 @@ const ChatLandingPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-white">
       <Navigation />
-      <main>
+      {showSessionInput ? <SessionInput show={showSessionInput} onClose={() => {
+        setShowSessionInput(false);
+        window.scrollTo(0, 0);
+      }
+      } /> : <main>
         <HeroSection />
         <SectionSeparator />
         <AboutSection />
@@ -420,8 +436,29 @@ const ChatLandingPage: React.FC = () => {
         <SectionSeparator />
         <TestimonialsSection />
       </main>
+      }
 
       <FooterSection />
+    </div>
+  );
+};
+
+const SessionInput = ({ show, onClose }: { show: boolean; onClose: () => void; }) => {
+
+  return (
+    <div className="relative top-0 left-0 right-0 bottom-0 bg-white z-50 outline outline-1 outline-gray-200">
+
+      <div className="absolute top-0 left-0 w-full z-50">
+        <ChannelModal
+          isOpen={show}
+          onClose={onClose}
+          onJoin={() => {}}
+          sessionName={""}
+          sessionUrl={window.location.href}
+          onlineCount={0}
+          totalCount={0}
+        />
+      </div>
     </div>
   );
 };

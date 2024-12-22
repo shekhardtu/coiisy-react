@@ -1,12 +1,13 @@
-import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import * as React from "react";
@@ -50,12 +51,12 @@ export function ConfirmModal({
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px] p-6 gap-6">
-        <DialogHeader className="flex-row gap-4 items-start">
+    <AlertDialog open={isOpen} onOpenChange={onClose}>
+      <AlertDialogContent className="w-full p-6 gap-6">
+        <AlertDialogHeader className="flex-row gap-4 items-start">
           {icon || (variant === "destructive" && (
             <div className={cn(
-              "rounded-full p-2 shrink-0",
+              "rounded-full p-2 shrink-0  mt-3",
               variant === "destructive"
                 ? "bg-red-100/80 dark:bg-red-900/80"
                 : "bg-blue-100/80 dark:bg-blue-900/80"
@@ -71,42 +72,42 @@ export function ConfirmModal({
             </div>
           ))}
           <div className="flex-1 space-y-2">
-            <DialogTitle className="text-xl font-semibold tracking-tight">
+            <AlertDialogTitle className="text-xl font-semibold tracking-tight">
               {title}
-            </DialogTitle>
+            </AlertDialogTitle>
             {description && (
-              <DialogDescription className="text-base leading-relaxed text-muted-foreground">
+              <AlertDialogDescription className="text-base leading-relaxed text-muted-foreground">
                 {description}
-              </DialogDescription>
+              </AlertDialogDescription>
             )}
           </div>
-        </DialogHeader>
+        </AlertDialogHeader>
 
-        <DialogFooter className="flex sm:justify-between sm:space-x-4 border-t pt-4">
-          <Button
-            variant="outline"
-            onClick={onClose}
+        <AlertDialogFooter className="flex sm:justify-between sm:space-x-4 border-t pt-4">
+          <AlertDialogCancel
             disabled={isPending}
             className="flex-1 text-base font-medium"
           >
             {cancelText}
-          </Button>
-          <Button
-            variant={variant === "destructive" ? "destructive" : "default"}
-            disabled={isPending}
+          </AlertDialogCancel>
+          <AlertDialogAction
             onClick={handleConfirm}
+            disabled={isPending}
             className={cn(
-              "flex-1 text-base font-medium",
-              isPending && "cursor-not-allowed"
+              "flex-1 text-base font-medium inline-flex items-center justify-center",
+              variant === "destructive"
+                ? "bg-red-600 text-white hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700"
+                : "bg-primary text-primary-foreground hover:bg-primary/90",
+              isPending && "cursor-not-allowed opacity-50"
             )}
           >
             {isPending && (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             )}
             {confirmText}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

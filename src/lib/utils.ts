@@ -192,6 +192,15 @@ export const getCurrentTimeStamp = <T extends string | Date>(): T => {
   return Date.now() as unknown as T;
 }
 
+export  const sanitizeChannelId = (value: string) => {
+  // Convert to lowercase and replace spaces with hyphens
+  // Only allow lowercase letters, numbers, underscores and hyphens
+  return value
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-_]/g, '');
+};
+
 
 export const getCurrentUser = (sessionId: string | undefined) => {
 
