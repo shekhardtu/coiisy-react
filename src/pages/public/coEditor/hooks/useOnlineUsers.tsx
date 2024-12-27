@@ -1,90 +1,52 @@
 import { useWebSocket } from "@/contexts/WebSocketContext";
 import { local } from "@/lib/utils";
-import { WS_MESSAGE_TYPES, wsConfig } from "@/lib/webSocket.config";
-import { isAfter, parseISO, subMinutes } from "date-fns";
+import { WS_MESSAGE_TYPES } from "@/lib/webSocket.config";
 import { useCallback, useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 import {
   OnlineUserInterface,
   ServerUserDisconnectedInterface,
   ServerUserJoinedSessionInterface,
 } from "../components/Editor.types";
-interface UseOnlineUsersProps {
-  minutes?: number
-  sessionId: string
-}
 
-export const useOnlineUsers = ({
-  minutes = wsConfig.onlineTimeoutInMinutes,
-  sessionId,
-}: UseOnlineUsersProps) => {
+
+export const useOnlineUsers = () => {
   const { status, subscribe } = useWebSocket()
-
-  const [isUserAdmin, setIsUserAdmin] = useState<boolean>(false)
-
-  const STORAGE_KEY = sessionId
-  const getStoredUsers = () => {
-    const storedSession = local("json", STORAGE_KEY).get("sessionIdentifier")
-    return storedSession?.onlineUsers?.filter((user: OnlineUserInterface) =>
-      user.sessionId === sessionId
-    ) || []
+  const { sessionId } = useParams()
+  if (!sessionId) {
+    throw new Error('sessionId is required for useOnlineUsers hook')
   }
 
-  const [userHistory, setUserHistory] = useState<OnlineUserInterface[]>(getStoredUsers)
+  const [isUserAdmin, setIsUserAdmin] = useState<boolean>(false)
+  const STORAGE_KEY = sessionId
 
-  const saveUsersToStorage = useCallback((users: OnlineUserInterface[]) => {
-    const storedSession = local("json", STORAGE_KEY).get("sessionIdentifier")
-    const otherSessionUsers = (storedSession?.onlineUsers || []).filter(
-      (user: OnlineUserInterface) => user.sessionId !== sessionId
-    )
 
-    local("json", STORAGE_KEY).set("sessionIdentifier", {
-      ...storedSession,
-      onlineUsers: [...otherSessionUsers, ...users]
-    })
-  }, [STORAGE_KEY, sessionId])
 
-  const getActiveUsers = useCallback(
-    (userHistory: OnlineUserInterface[]) => {
-      const now = new Date()
-      const lastActive = subMinutes(now, minutes)
+  const [userHistory, setUserHistory] = useState<OnlineUserInterface[]>([])
 
-      const activeUsers = userHistory?.filter((user) => {
-        const lastSeenAtDate = parseISO(user.lastSeenAt as string)
-        return isAfter(lastSeenAtDate, lastActive)
-      })
-      return activeUsers
-    },
-    [minutes]
-  )
 
   const [activeUsers, setActiveUsers] = useState<OnlineUserInterface[]>([])
   const [autoJoin, setAutoJoin] = useState<boolean>(false)
 
 
 
+  // Update active users when status changes
   useEffect(() => {
 
-    if (status === "connected" && userHistory.length > 0) {
-      const activeUsers = getActiveUsers(userHistory)
-      setActiveUsers(activeUsers)
+
+    if (status === "connected" && sessionId) {
+      const onlineUsers = userHistory.filter(user =>
+        user.isOnline && user.sessionId === sessionId
+      )
+
+      setActiveUsers(onlineUsers)
     } else if (status === "disconnected") {
       setActiveUsers([])
     }
-  }, [getActiveUsers, status, userHistory])
+  }, [status, sessionId, userHistory])
 
   useEffect(() => {
-    if (!sessionId) return
 
-    const currentSessionUsers = userHistory.map(user => ({
-      ...user,
-      sessionId
-    }))
-
-    saveUsersToStorage(currentSessionUsers)
-    setActiveUsers(getActiveUsers(currentSessionUsers))
-  }, [userHistory, sessionId, getActiveUsers, saveUsersToStorage])
-
-  useEffect(() => {
     // Check admin status whenever userHistory changes
     const existingUserIdentifier = local("json", STORAGE_KEY).get("sessionIdentifier");
     if (existingUserIdentifier) {
@@ -97,6 +59,8 @@ export const useOnlineUsers = ({
 
   const handleUserJoined = useCallback(
     (data: ServerUserJoinedSessionInterface) => {
+
+
       if (data.autoJoin) {
         setAutoJoin(true)
       }
@@ -120,38 +84,16 @@ export const useOnlineUsers = ({
         }))
         .sort((a) => (a.isOnline ? -1 : 1))
 
-
-
-      setUserHistory((prev) => {
-        const merged = [...prev]
-        newUsers.forEach((newUser) => {
-          const existingIndex = merged.findIndex(
-            (u) => u.userId === newUser.userId && u.sessionId === sessionId
-          )
-          if (existingIndex >= 0) {
-            merged[existingIndex] = {
-              ...merged[existingIndex],
-              isOnline: newUser.isOnline,
-              connectedAt: newUser.connectedAt,
-              lastSeenAt: newUser.lastSeenAt,
-              isAdmin: newUser.isAdmin,
-              sessionId
-            }
-          } else {
-            merged.push(newUser)
-          }
-        })
-        return merged.sort((a) => (a.isOnline ? -1 : 1))
-      })
+      setUserHistory(newUsers)
+      setActiveUsers(newUsers.filter(user => user.isOnline))
     },
     [sessionId]
   )
 
   const handleUserLeft = useCallback(
     (data: ServerUserDisconnectedInterface) => {
-
-      setUserHistory((prevUsers) =>
-        prevUsers
+      setUserHistory(prevUsers => {
+        const updatedUsers = prevUsers
           .map((u) =>
             u.userId === data.userId
               ? {
@@ -163,17 +105,22 @@ export const useOnlineUsers = ({
                 }
               : u
           )
-          .sort((a) => (a.isOnline ? -1 : 1))
-      )
+          .sort((a) => (a.isOnline ? -1 : 1));
+
+        setActiveUsers(updatedUsers.filter(user => user.isOnline && user.sessionId === sessionId));
+        return updatedUsers;
+      });
     },
-    []
+    [sessionId]
   )
 
-  useEffect(() => {
 
+
+  useEffect(() => {
     const unsubscribeUserJoined = subscribe(
       WS_MESSAGE_TYPES.SERVER_USER_JOINED_SESSION,
       (data: ServerUserJoinedSessionInterface) => {
+
         handleUserJoined(data)
       }
     )
@@ -185,11 +132,13 @@ export const useOnlineUsers = ({
       }
     )
 
+    // Clean up subscriptions when sessionId changes
     return () => {
       unsubscribeUserJoined()
       unsubscribeUserLeft()
     }
-  }, [sessionId, status, subscribe, handleUserJoined, handleUserLeft])
+  }, [sessionId, subscribe, handleUserJoined, handleUserLeft])
+
 
 
 

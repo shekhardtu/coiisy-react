@@ -8,9 +8,10 @@ import {
 } from '@/pages/public/coEditor/components/Editor.types';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
-
 import { getCurrentTimeStamp, local } from '@/lib/utils';
 import { getWebSocketURL } from '@/lib/webSocket.config';
+import { useParams } from 'react-router-dom';
+import { v4 as uuidv4 } from 'uuid';
 
 
 //
@@ -47,6 +48,7 @@ interface WebSocketContextType {
   setCurrentUser: (currentUser: CurrentUserInterface) => void;
   sendAuthMessage: (message: AuthMessageInterface) => void;
   serverAvailable: boolean;
+  switchSession: (sessionId: string) => void;
 }
 
 const WebSocketContext = createContext<WebSocketContextType | null>(null);
@@ -62,6 +64,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   children,
   url = getWebSocketURL() // Use environment-based URL as default
 }) => {
+  const { sessionId: sessionIdParam } = useParams()
   const [status, setStatus] = useState<ConnectionStatus>('disconnected');
   const wsRef = useRef<WebSocket | null>(null);
   const pingIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -70,10 +73,17 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   const stateRef = useRef<WebSocketState>({ reconnectCount: 0 });
   const isConnectingRef = useRef<boolean>(false);
   const [currentUser, setCurrentUser] = useState<CurrentUserInterface>({} as CurrentUserInterface);
-  const [sessionId, setSessionId] = useState<string>("");
+  const [sessionId, setSessionId] = useState<string>(sessionIdParam || "");
   const [serverAvailable, setServerAvailable] = useState(true);
 
 
+
+  useEffect(() => {
+    const connectionId = local('json', "appIdentifier").get("connectionId");
+    if (!connectionId) {
+      local('json', "appIdentifier").set("connectionId", uuidv4());
+    }
+  }, [])
 
 
   const getCurrentUser = useCallback((sessionId: string) => {
@@ -165,7 +175,6 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     try {
 
       const data = JSON.parse(event.data);
-      // console.log(data);
       if (!isValidMessageType(data)) {
         console.error('Invalid message format:', data);
         return;
@@ -244,6 +253,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 
     try {
       const ws = new WebSocket(url);
+
+
       log('Initiating connection to:', url);
 
       ws.onopen = () => {
@@ -263,6 +274,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
             sessionId,
             userId: currentUser.userId,
             createdAt: getCurrentTimeStamp(),
+            connectionId: local('json', "appIdentifier").get("connectionId"),
           });
         } else {
           console.warn('Missing user or session data on connection');
@@ -350,7 +362,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
         disconnect();
       }
     };
-  }, [sessionId]); // Add sessionId as dependency
+  }, []); // Add sessionId as dependency
 
 
 
@@ -362,12 +374,25 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     }
   }, []);
 
+  const switchSession = useCallback((sessionId: string) => {
+    const localSessionId = local('json', sessionId).get("sessionIdentifier");
+    if (localSessionId) {
+      sendAuthMessage({
+        type: WS_MESSAGE_TYPES.CLIENT_AUTH,
+        ...localSessionId.userIdentifier,
+        sessionId,
+        createdAt: getCurrentTimeStamp(),
+        connectionId: local('json', "appIdentifier").get("connectionId"),
+      });
+    }
+  }, [sendMessage]);
+
   const userJoinedSession = useCallback((message: ClientUserJoinedSessionInterface) => {
     if (status === 'connected' && message.userId) {
       sendMessage({
         ...message,
         sessionId: message.sessionId,
-        type: 'client_user_joined_session',
+        type: WS_MESSAGE_TYPES.CLIENT_USER_JOINED_SESSION,
         userId: message.userId,
         createdAt: getCurrentTimeStamp(),
         fullName: message.fullName,
@@ -387,7 +412,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     setCurrentUser,
     sessionId,
     setSessionId,
-    serverAvailable
+    serverAvailable,
+    switchSession
   }), [
     status,
     sendAuthMessage,
@@ -399,7 +425,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     setCurrentUser,
     sessionId,
     setSessionId,
-    serverAvailable
+    serverAvailable,
+    switchSession
   ]);
 
   return (
@@ -412,7 +439,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 // Type-safe logging
 const log = (message: string, ...args: Array<string | number | Error>) => {
   if (!import.meta.env.PROD && import.meta.env.VITE_DEV_LOG_ENABLED === 'true') {
-    console.log(`[WebSocket] ${message}`, ...args);
+    console.warn(`[WebSocket] ${message}`, ...args);
   }
 };
 
