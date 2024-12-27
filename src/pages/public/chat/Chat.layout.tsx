@@ -4,6 +4,7 @@ import React, { Suspense, useCallback, useEffect, useState } from "react";
 import { Outlet, useNavigate, useParams } from "react-router-dom";
 import { v4 as uuidv4 } from 'uuid';
 
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { MessageWebSocketProvider } from "@/contexts/MessageWebSocket.context";
 import { ViewportProvider } from "@/contexts/Viewport.context";
 import { useWebSocket } from "@/contexts/WebSocketContext";
@@ -11,6 +12,7 @@ import { CurrentUserInterface } from "../coEditor/components/Editor.types";
 import { JoinSessionModal } from "../coEditor/components/JoinSessionModal";
 import { EditorProvider } from "../coEditor/contexts/Editor.context";
 import useEditorContext from "../coEditor/hooks/useEditor.contexthook";
+import { AppSidebar } from "./components/ChatSidebar";
 
 
 const ChatLayoutContent: React.FC<{ existingSessionId: string | undefined }> = ({ existingSessionId }) => {
@@ -20,11 +22,13 @@ const ChatLayoutContent: React.FC<{ existingSessionId: string | undefined }> = (
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
   const { tryConnect } = useWebSocket();
 
+
+
   const {
     theme,
     sessionData,
     setSessionData,
-
+    chatSessions,
   } = useEditorContext();
 
   useEffect(() => {
@@ -100,9 +104,12 @@ const ChatLayoutContent: React.FC<{ existingSessionId: string | undefined }> = (
             <div className="animate-pulse">Loading editor...</div>
           </div>
         }>
-          <EditorErrorBoundary>
-            <Outlet context={{ theme, sessionId: sessionData.sessionId }} />
-          </EditorErrorBoundary>
+            <EditorErrorBoundary>
+              <SidebarProvider className="flex flex-1 h-full w-full flex-row">
+                <AppSidebar chatSessions={chatSessions as []} sessionId={sessionData.sessionId} />
+                <Outlet context={{ theme, sessionId: sessionData.sessionId, sidebarTrigger: <SidebarTrigger  /> }} />
+              </SidebarProvider>
+            </EditorErrorBoundary>
         </Suspense>
       )}
     </div>
@@ -116,7 +123,6 @@ const ChatLayout: React.FC = () => {
 
   return (
     <EditorProvider>
-
         <ViewportProvider>
           <MessageWebSocketProvider>
             <ChatLayoutContent existingSessionId={sessionId} />

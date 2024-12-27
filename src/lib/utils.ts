@@ -11,7 +11,7 @@ export function cn(...inputs: ClassValue[]) {
 const prefixKey = "v0"
 export function local(
   type: "json" | "string" = "string",
-  prefix: string = prefixKey
+  prefix: string | null = null
 ) {
   return {
     update: (key: string, value: string | object | boolean) => {
@@ -31,6 +31,32 @@ export function local(
       if (type === "json") return JSON.parse(value)
 
       return value
+    },
+    getAll: () => {
+      let allKeys: string[] = []
+      if (prefix) {
+         allKeys = Object.keys(window.localStorage).filter(key => key.endsWith(`:${prefix}`));
+      }
+      else {
+        allKeys = Object.keys(window.localStorage)
+      }
+
+      if(type === "json") {
+        return allKeys.map((key) => {
+          try {
+            const value = window.localStorage.getItem(key);
+            return {
+              [key.split(":")[0]]: value ? JSON.parse(value)  : null,
+            }
+          } catch (error) {
+            console.warn(`Failed to parse JSON for key "${key}"`, error);
+            return {
+              [key.split(":")[0]]: null,
+            }
+          }
+        });
+      }
+      return allKeys.map(key => window.localStorage.getItem(key) || "");
     },
     set: (key: string, value: string | object | boolean) => {
       if (type === "json") {

@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import React from 'react';
 
+import { useParams } from "react-router-dom";
 import { OnlineUserInterface } from "./Editor.types";
 import UserAvatar, { AVATAR_SIZE_CLASSES } from './UserAvatar';
 
@@ -13,10 +14,11 @@ interface UserAvatarsProps {
 
 const UserAvatars: React.FC<UserAvatarsProps> = ({ users, size = 'default' }) => {
   const sizeClass = AVATAR_SIZE_CLASSES[size];
+  const {sessionId} = useParams();
 
   return (
     <div className={cn("flex items-center", sizeClass.spacing)}>
-      {users.map((user) => user.isShow && (
+      {users.filter(user => user.sessionId === sessionId).map((user) => user.isShow && (
         <UserAvatar key={user.userId} user={user} size={size} />
       ))}
     </div>

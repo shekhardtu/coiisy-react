@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { local } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,6 +8,7 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { local } from "@/lib/utils";
 import {
   Search
 } from "lucide-react";
@@ -19,7 +19,6 @@ export function Header() {
   const navigate = useNavigate();
   const handleLogout = () => {
     local().clear();
-    console.log('Logout');
     navigate('/login');
   };
   return (
