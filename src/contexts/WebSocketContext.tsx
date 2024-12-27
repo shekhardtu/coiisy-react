@@ -375,15 +375,17 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   }, []);
 
   const switchSession = useCallback((sessionId: string) => {
-    const localSessionId = local('json', sessionId).get("sessionIdentifier");
-    if (localSessionId) {
-      sendAuthMessage({
-        type: WS_MESSAGE_TYPES.CLIENT_AUTH,
-        ...localSessionId.userIdentifier,
-        sessionId,
-        createdAt: getCurrentTimeStamp(),
-        connectionId: local('json', "appIdentifier").get("connectionId"),
-      });
+    if (sessionId) {
+      const localSessionId = local('json', sessionId).get("sessionIdentifier");
+      if (localSessionId) {
+        sendAuthMessage({
+          type: WS_MESSAGE_TYPES.CLIENT_AUTH,
+          ...localSessionId.userIdentifier,
+          sessionId,
+          createdAt: getCurrentTimeStamp(),
+          connectionId: local('json', "appIdentifier").get("connectionId"),
+        });
+      }
     }
   }, [sendMessage]);
 
