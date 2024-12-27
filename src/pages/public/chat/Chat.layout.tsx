@@ -106,7 +106,7 @@ const ChatLayoutContent: React.FC<{ existingSessionId: string | undefined }> = (
         }>
             <EditorErrorBoundary>
               <SidebarProvider className="flex flex-1 h-full w-full flex-row">
-                <AppSidebar chatSessions={chatSessions || []} sessionId={sessionData.sessionId} />
+                <AppSidebar chatSessions={chatSessions as []} sessionId={sessionData.sessionId} />
                 <Outlet context={{ theme, sessionId: sessionData.sessionId, sidebarTrigger: <SidebarTrigger  /> }} />
               </SidebarProvider>
             </EditorErrorBoundary>
