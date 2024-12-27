@@ -50,7 +50,7 @@ class EditorErrorBoundary extends Component<Props, State> {
       timestamp: new Date().toISOString(),
     };
 
-    console.log('Error Report:', errorReport);
+    console.error('Error Report:', errorReport);
     // You could send this to your error tracking service
     // Example: sendToErrorTracking(errorReport);
   };

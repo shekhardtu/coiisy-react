@@ -23,26 +23,18 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
 
   const handleUserRequestToJoin = useCallback((message: ServerMessage) => {
     if (message.type === WS_MESSAGE_TYPES.SERVER_USER_REQUEST_TO_JOIN_SESSION) {
-      console.log("Handling user request to join session:", message.sessionId);
       // Add your logic here to handle the join request
     }
   }, []);
 
   useEffect(() => {
-    // Only set up subscription when we have all required data
-    // if (!status || !sessionId || !currentUser?.userId) {
-    //   console.log("Missing required data for subscription, skipping setup");
-    //   return;
-    // }
 
-    console.log("Setting up subscription for user request to join session");
     const unsubscribe = subscribe(
       WS_MESSAGE_TYPES.SERVER_USER_REQUEST_TO_JOIN_SESSION,
       handleUserRequestToJoin
     );
 
     return () => {
-      console.log("Cleaning up subscription");
       unsubscribe();
     };
   }, [

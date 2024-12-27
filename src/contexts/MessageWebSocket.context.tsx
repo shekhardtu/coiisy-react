@@ -3,7 +3,7 @@ import {
   WS_MESSAGE_TYPES
 } from "@/lib/webSocket.config";
 import { SessionStatusInterface } from "@/pages/public/chat/components/chat.types";
-import { ChatMessageInterface, ClientSessionAcceptedToJoinInterface, ClientSessionRejectedToJoinInterface, ServerSessionMessagesInterface, ServerUserRequestToJoinSessionToAdminInterface, ServerUserRequestToJoinSessionToGuestInterface, SessionHandlerActionInterface } from "@/pages/public/coEditor/components/Editor.types";
+import { ChatMessageInterface, ClientSessionAcceptedToJoinInterface, ClientSessionRejectedToJoinInterface, ServerSessionMessagesInterface, ServerUserRequestToJoinSessionToAdminInterface, SessionHandlerActionInterface } from "@/pages/public/coEditor/components/Editor.types";
 import React, {
   createContext,
   useCallback,
@@ -76,7 +76,7 @@ export const MessageWebSocketProvider: React.FC<
 
       // Update local messages immediately
       setMessages((prev) => [
-        ...prev,
+        ...prev.filter(msg => msg.sessionId === sessionId),
         { ...messageData, state: [{state: "sending", userId: currentUser.userId!, messageMongoId: ""}] },
       ])
 
@@ -92,7 +92,7 @@ export const MessageWebSocketProvider: React.FC<
         // Update message state to failed
         setMessages((prev) =>
           prev.map((msg) =>
-            msg.messageId === messageId
+            msg.messageId === messageId && msg.sessionId === sessionId
               ? { ...msg, state: [{state: "failed", userId: currentUser.userId!, messageMongoId: ""}] }
               : msg
           )
@@ -105,9 +105,9 @@ export const MessageWebSocketProvider: React.FC<
   const handleServerChatMessages = useCallback((message: ChatMessageInterface) => {
     lastMessageAction.current = WS_MESSAGE_TYPES.SERVER_CHAT;
     const sessionData = local("json", sessionId).get(`sessionIdentifier`);
-
     if(message.sessionId !== sessionId) return;
     setMessages((prevMessages) => {
+      prevMessages = prevMessages.filter(msg => msg.sessionId === sessionId)
       let newMessages
       const existingMessageIndex = prevMessages.findIndex(
         (msg) => msg.messageId === message.messageId
@@ -224,13 +224,14 @@ export const MessageWebSocketProvider: React.FC<
       if (!currentUser.userId || !sessionId) return
       lastMessageAction.current = WS_MESSAGE_TYPES.CLIENT_CHAT_DELETE;
 
-      setMessages(prevMessages =>
-        prevMessages.map(msg =>
+      setMessages(prevMessages => {
+        prevMessages = prevMessages.filter(msg => msg.sessionId === sessionId)
+        return prevMessages.map(msg =>
           msg.messageId === message.messageId
             ? { ...msg, content: "Message has been deleted", state: [{state: "deleted", userId: currentUser.userId!, messageMongoId: msg.messageId}] }
             : msg
         )
-      );
+      });
 
       wsSendMessage({
         ...message,
@@ -346,10 +347,9 @@ export const MessageWebSocketProvider: React.FC<
     if (messages.some(message => message.sessionId !== sessionId)) return;
 
     setMessages(prevMessages => {
-
+      prevMessages = prevMessages.filter(message => message.sessionId === sessionId)
       // update props of previous messages
       const updatedMessages = prevMessages.map((msg) => {
-        console.log('msg', msg);
         const message = messages.find(m => m.messageId === msg.messageId)
         return {
           ...msg,
@@ -372,7 +372,7 @@ export const MessageWebSocketProvider: React.FC<
       if(message.sessionId !== sessionId) return;
 
       setMessages(prevMessages =>
-        prevMessages.map(msg =>
+        prevMessages.filter(msg => msg.sessionId === sessionId).map(msg =>
           msg.messageId === message.messageId
               ? message
             : msg
@@ -383,7 +383,7 @@ export const MessageWebSocketProvider: React.FC<
   )
 
   const handleJoinSessionByAdmin = useCallback((session: ServerUserRequestToJoinSessionToAdminInterface) => {
-    console.log('handleJoinSessionByAdmin', session);
+
     setUserGuestRequestToJoinSession(session);
 
     const request = "requestedToJoin"
@@ -391,12 +391,9 @@ export const MessageWebSocketProvider: React.FC<
 
   }, []);
 
-  const handleJoinSessionByGuest = useCallback((session:ServerUserRequestToJoinSessionToGuestInterface) => {
-    console.log('handleJoinSessionByGuest', session);
+  const handleJoinSessionByGuest = useCallback(() => {
     const request = "requestReceivedToJoin"
     setSessionStatus(request)
-    console.count("handleJoinSessionByGuest")
-
   }, [])
 
 

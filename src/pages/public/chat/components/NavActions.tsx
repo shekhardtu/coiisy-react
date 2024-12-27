@@ -20,7 +20,7 @@ import {
   UserPlus
 } from "lucide-react";
 import * as React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import useEditorContext from "../../coEditor/hooks/useEditor.contexthook";
 import { useOnlineUsers } from "../../coEditor/hooks/useOnlineUsers";
 import { ConfirmModal } from "./ConfirmModal";
@@ -40,10 +40,11 @@ export function NavActions() {
   const [isOpen, setIsOpen] = React.useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
   const { theme, handleThemeChange } = useEditorContext();
-  const { status, disconnect, sessionId, tryConnect, sendMessage } = useWebSocket();
+  const { status, disconnect, tryConnect, sendMessage } = useWebSocket();
   const navigate = useNavigate()
+  const { sessionId } = useParams()
 
-  const { isUserAdmin, autoJoin } = useOnlineUsers({ sessionId: sessionId! })
+  const { isUserAdmin, autoJoin } = useOnlineUsers()
 
   const handleClearSession = React.useCallback(async () => {
     if (status === "connected") {
