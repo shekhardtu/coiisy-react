@@ -1,7 +1,7 @@
 import { local } from '@/lib/utils';
+import { Frame, LucideIcon } from 'lucide-react';
 import React, { createContext, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { SessionDataInterface } from '../components/Editor.types';
-
 
 interface EditorContextType {
   theme: "light" | "dark";
@@ -21,9 +21,24 @@ interface EditorContextType {
   isHeaderVisible: boolean;
   setIsHeaderVisible: (isVisible: boolean) => void;
   handleHeaderVisibility: (container: HTMLDivElement) => void;
+
+  chatSessions: {
+    name: string | undefined;
+    url: string;
+    icon: LucideIcon;
+    session: SessionDataInterface;
+  }[];
+  setChatSessions: (chatSessions: {
+    name: string | undefined;
+    url: string;
+    icon: LucideIcon;
+    session: SessionDataInterface;
+  }[]) => void;
+
 }
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
+
 
 // Create a stable key for localStorage
 const STORAGE_KEY = 'sessionIdentifier';
@@ -41,6 +56,12 @@ export const EditorProvider: React.FC<{
   const [isWebSocketConnected, setIsWebSocketConnected] = useState(false);
   const [sessionId, setSessionId] = useState<string | undefined>(undefined);
   const [sessionData, setSessionData] = useState<SessionDataInterface | null>(null);
+  const [chatSessions, setChatSessions] = useState<{
+    name: string | undefined;
+    url: string;
+    icon: LucideIcon;
+    session: SessionDataInterface;
+  }[]>([]);
 
   const [sessionStats, setSessionStats] = useState({
     onlineCount: 0,
@@ -62,6 +83,29 @@ export const EditorProvider: React.FC<{
       clearTimeout(resizeTimeoutRef.current);
     }
   }, []);
+
+
+
+  useEffect(() => {
+    const chatSessions = local('json', "sessionIdentifier").getAll();
+
+    const chatSessionsArray = chatSessions.map((session) => {
+
+      const sessionObject = Object.values(session)[0] as SessionDataInterface;
+      return {
+        name: sessionObject.sessionId,
+        url: `${sessionObject.sessionId}`,
+        icon: sessionObject.icon || Frame,
+        session: sessionObject
+      }
+    });
+    setChatSessions(chatSessionsArray);
+  }, [sessionData]);
+
+
+
+
+
 
   // Initialize session first
   useEffect(() => {
@@ -154,12 +198,13 @@ export const EditorProvider: React.FC<{
     setSessionId,
     setSessionData,
     handleThemeChange,
-
     sessionStats,
     setSessionStats,
     isHeaderVisible,
     setIsHeaderVisible,
     handleHeaderVisibility,
+    chatSessions,
+    setChatSessions
   }), [
     theme,
     cursorPosition,
@@ -167,10 +212,10 @@ export const EditorProvider: React.FC<{
     sessionData,
     sessionId,
     handleThemeChange,
-
     sessionStats,
     isHeaderVisible,
     handleHeaderVisibility,
+    chatSessions
   ]);
 
 

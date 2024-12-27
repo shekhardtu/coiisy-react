@@ -1,8 +1,8 @@
 import { useMessageWebSocket } from "@/contexts/MessageWebSocket.context";
-import { useViewport } from "@/contexts/Viewport.context";
 import { useWebSocket } from "@/contexts/WebSocketContext";
-import { cn, local } from "@/lib/utils";
-import { WS_MESSAGE_TYPES, wsConfig } from "@/lib/webSocket.config";
+import { local } from "@/lib/utils";
+import { WS_MESSAGE_TYPES } from "@/lib/webSocket.config";
+
 import React, { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { useParams } from "react-router-dom";
 
@@ -19,11 +19,11 @@ interface NavigatorWithVirtualKeyboard extends Navigator {
   }
 }
 
+const ChatPage: React.FC = () => {
+  // Get the context from outlet
 
-
-const ChatPage: React.FC =() => {
-  const chatContainerRef = useRef<HTMLDivElement>(null)
-  const { sessionId } = useParams()
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const { sessionId } = useParams();
   const {
     status,
     tryConnect,
@@ -31,10 +31,7 @@ const ChatPage: React.FC =() => {
     userJoinedSession,
   } = useWebSocket()
 
-  const {   sessionStatus } = useMessageWebSocket()
-
-
-  const { keyboardVisible, isKeyboardSupported } = useViewport()
+  const { sessionStatus } = useMessageWebSocket()
 
   const { userIdentifier } =
     local("json", sessionId).get(`sessionIdentifier`) || {}
@@ -75,7 +72,8 @@ const ChatPage: React.FC =() => {
     setSessionId,
   ])
 
-  const { activeUsers } = useOnlineUsers({ minutes: wsConfig.onlineTimeoutInMinutes, sessionId: sessionId! })
+
+  const { activeUsers } = useOnlineUsers()
 
 
   const scrollToBottom = useCallback((force = false) => {
@@ -152,11 +150,7 @@ const ChatPage: React.FC =() => {
     status,
     tryConnect,
     activeUsers,
-    className: cn(
-      "flex-none border-b border-border header top-0 left-0 right-0 z-50",
-      `${keyboardVisible && !isKeyboardSupported && "mb-[env(keyboard-inset-height,0)] fixed"}`
-    )
-  }), [status, tryConnect, activeUsers, keyboardVisible, isKeyboardSupported]);
+  }), [status, tryConnect, activeUsers]);
 
 
 

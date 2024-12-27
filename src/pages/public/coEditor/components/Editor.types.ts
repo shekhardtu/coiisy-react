@@ -1,4 +1,5 @@
 import { ClientMessageTypes, ServerMessageTypes, WS_MESSAGE_TYPES } from "@/lib/webSocket.config";
+import { LucideIcon } from "lucide-react";
 
 
 export type MessageState = 'sending' | 'sent' | 'delivered' | 'failed' | 'deleted' | 'seen' | 'removed' ;
@@ -57,6 +58,7 @@ export interface SessionDataInterface {
     content?: string;
     language?: string;
   };
+  icon?: LucideIcon;
   theme?: "light" | "dark";
   userIdentifier?: CurrentUserInterface;
   chatWidth?: number;
@@ -121,6 +123,7 @@ export interface AuthMessageInterface extends BaseMessage {
   type: typeof WS_MESSAGE_TYPES.CLIENT_AUTH;
   sessionId: string;
   userId: string;
+  connectionId: string;
 }
 
 export interface ClientUserJoinedSessionInterface extends BaseMessage {
