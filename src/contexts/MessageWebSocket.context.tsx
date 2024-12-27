@@ -35,6 +35,8 @@ interface MessageWebSocketContextType {
   updateSessionMessages: (messages: ChatMessageInterface[]) => void
   userGuestRequestToJoinSession: ServerUserRequestToJoinSessionToAdminInterface | undefined
   setUserGuestRequestToJoinSession: React.Dispatch<React.SetStateAction<ServerUserRequestToJoinSessionToAdminInterface | undefined>>
+  messagesBySession: Map<string, ChatMessageInterface[]>
+  setMessagesBySession: React.Dispatch<React.SetStateAction<Map<string, ChatMessageInterface[]>>>;
 }
 
 const MessageWebSocketContext =
@@ -57,6 +59,8 @@ export const MessageWebSocketProvider: React.FC<
   const [userGuestRequestToJoinSession, setUserGuestRequestToJoinSession] = useState<ServerUserRequestToJoinSessionToAdminInterface | undefined>(undefined);
 
   // const [userRequestToJoinSessionQueue, setUserRequestToJoinSessionQueue] = useState<ClientUserRequestToJoinSessionInterface[]>([])
+
+  const [messagesBySession, setMessagesBySession] = useState<Map<string, ChatMessageInterface[]>>(new Map());
 
   const sendChatMessage = useCallback(
     (content: string) => {
@@ -107,33 +111,34 @@ export const MessageWebSocketProvider: React.FC<
 
   const handleServerChatMessages = useCallback((message: ChatMessageInterface) => {
     lastMessageAction.current = WS_MESSAGE_TYPES.SERVER_CHAT;
-    const sessionData = local("json", sessionId).get(`sessionIdentifier`);
-    if(message.sessionId !== sessionId) return;
 
-    setMessages((prevMessages) => {
-      const currentSessionMessages = prevMessages.filter(msg => msg.sessionId === sessionId);
-      let newMessages;
-      const existingMessageIndex = currentSessionMessages.findIndex(
-        (msg) => msg.messageId === message.messageId
-      );
+    setMessagesBySession((prevMap) => {
+      const newMap = new Map(prevMap);
+      const sessionMessages = newMap.get(message.sessionId) || [];
+      const updatedMessages = [...sessionMessages];
 
-      if (existingMessageIndex !== -1) {
-        newMessages = [...currentSessionMessages];
-        newMessages[existingMessageIndex] = { ...message };
+      const existingIndex = updatedMessages.findIndex(msg => msg.messageId === message.messageId);
+      if (existingIndex !== -1) {
+        updatedMessages[existingIndex] = message;
       } else {
-        newMessages = [...currentSessionMessages, { ...message }];
+        updatedMessages.push(message);
       }
 
+      newMap.set(message.sessionId, updatedMessages);
+      return newMap;
+    });
+
+    // Update local storage for current session
+    if (message.sessionId === sessionId) {
+      const sessionData = local("json", sessionId).get(`sessionIdentifier`);
       local("json", sessionId).set(`sessionIdentifier`, {
         ...sessionData,
         userIdentifier: {
           ...currentUser,
-          messages: newMessages,
+          messages: messagesBySession.get(sessionId) || [],
         },
       });
-
-      return newMessages;
-    });
+    }
   }, [currentUser, sessionId]);
 
   const deduplicateMessages = useCallback((messages: ChatMessageInterface[]): ChatMessageInterface[] => {
@@ -314,30 +319,29 @@ export const MessageWebSocketProvider: React.FC<
     lastMessageAction.current = WS_MESSAGE_TYPES.SERVER_SESSION_MESSAGES;
 
     if (!session.messages) {
-      setMessages([]);
+      setMessagesBySession(new Map());
       return;
     }
 
-    setMessages(() => {
-      if(!sessionId) return [];
-      const currentSessionMessages = session.messages.filter(msg => msg.sessionId === sessionId);
-      const allMessages = [...currentSessionMessages] as ChatMessageInterface[];
-      const uniqueMessages = deduplicateMessages(allMessages);
+    setMessagesBySession(prevMap => {
+      const newMap = new Map(prevMap);
+      const messagesGroupedBySession = new Map<string, ChatMessageInterface[]>();
 
-      const sessionData = local("json", sessionId).get(`sessionIdentifier`);
-      local("json", sessionId).set(`sessionIdentifier`, {
-        ...sessionData,
-        userIdentifier: {
-          ...currentUser,
-          messages: uniqueMessages,
-        },
+      session.messages.forEach(msg => {
+        const sessionMessages = messagesGroupedBySession.get(msg.sessionId) || [];
+        sessionMessages.push(msg);
+        messagesGroupedBySession.set(msg.sessionId, sessionMessages);
       });
 
-        return uniqueMessages;
+      // Merge with existing messages
+      messagesGroupedBySession.forEach((messages, sessionId) => {
+        const uniqueMessages = deduplicateMessages(messages);
+        newMap.set(sessionId, uniqueMessages);
+      });
 
-
+      return newMap;
     });
-  }, [currentUser, sessionId, deduplicateMessages]);
+  }, [deduplicateMessages]);
 
 
   const updateSessionMessages = useCallback((messages: ChatMessageInterface[]) => {
@@ -461,7 +465,9 @@ export const MessageWebSocketProvider: React.FC<
       setSessionStatus,
       sessionHandler,
       userGuestRequestToJoinSession,
-      setUserGuestRequestToJoinSession
+      setUserGuestRequestToJoinSession,
+      messagesBySession,
+      setMessagesBySession
     }),
     [
       sendChatMessage,
@@ -479,7 +485,9 @@ export const MessageWebSocketProvider: React.FC<
       setSessionStatus,
       sessionHandler,
       userGuestRequestToJoinSession,
-      setUserGuestRequestToJoinSession
+      setUserGuestRequestToJoinSession,
+      messagesBySession,
+      setMessagesBySession
     ]
   )
 
