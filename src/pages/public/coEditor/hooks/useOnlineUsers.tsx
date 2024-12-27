@@ -13,6 +13,9 @@ import {
 export const useOnlineUsers = () => {
   const { status, subscribe } = useWebSocket()
   const { sessionId } = useParams()
+  if (!sessionId) {
+    throw new Error('sessionId is required for useOnlineUsers hook')
+  }
 
   const [isUserAdmin, setIsUserAdmin] = useState<boolean>(false)
   const STORAGE_KEY = sessionId
