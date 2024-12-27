@@ -36,7 +36,7 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({  currentUser, scrollToBotto
 
 
   useEffect(() => {
-    if (filteredMessages.length > 0 && messages[filteredMessages.length - 1]?.sessionId === sessionId) {
+    if (filteredMessages.length > 0) {
         switch (lastMessageAction.current) {
           case WS_MESSAGE_TYPES.SERVER_CHAT_DELETE:
             break;
