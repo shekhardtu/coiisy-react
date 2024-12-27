@@ -170,7 +170,7 @@ export const MessageWebSocketProvider: React.FC<
   const sessionHandler = useCallback((action: SessionHandlerActionInterface, guestId?: string) => {
     let clientMessage: ClientSessionAcceptedToJoinInterface | ClientSessionRejectedToJoinInterface | undefined;
 // Add logic to add user to session if sessionStatus is requestedToJoin
-    if (action === "acceptedToJoin") {
+    if (action === "acceptedToJoin" && sessionId) {
       clientMessage = {
         type: WS_MESSAGE_TYPES.CLIENT_SESSION_ACCEPTED_TO_JOIN,
         createdAt: getCurrentTimeStamp(),
@@ -180,7 +180,7 @@ export const MessageWebSocketProvider: React.FC<
         userId: currentUser.userId || "",
         guestId: guestId || "",
       }
-    } else if (action === "rejectedToJoin") {
+    } else if (action === "rejectedToJoin" && sessionId) {
       clientMessage = {
         createdAt: getCurrentTimeStamp(),
         timestamp: getCurrentTimeStamp(),
@@ -319,6 +319,7 @@ export const MessageWebSocketProvider: React.FC<
     }
 
     setMessages(() => {
+      if(!sessionId) return [];
       const currentSessionMessages = session.messages.filter(msg => msg.sessionId === sessionId);
       const allMessages = [...currentSessionMessages] as ChatMessageInterface[];
       const uniqueMessages = deduplicateMessages(allMessages);
@@ -332,7 +333,9 @@ export const MessageWebSocketProvider: React.FC<
         },
       });
 
-      return uniqueMessages;
+        return uniqueMessages;
+
+
     });
   }, [currentUser, sessionId, deduplicateMessages]);
 
