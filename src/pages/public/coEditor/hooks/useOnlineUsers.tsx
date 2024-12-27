@@ -20,36 +20,15 @@ export const useOnlineUsers = () => {
   const [isUserAdmin, setIsUserAdmin] = useState<boolean>(false)
   const STORAGE_KEY = sessionId
 
-  const getStoredUsers = useCallback(() => {
-    const storedSession = local("json", STORAGE_KEY).get("sessionIdentifier")
-    const filteredUsers = storedSession?.onlineUsers?.filter((user: OnlineUserInterface) =>
-      user.sessionId === sessionId
-    ) || []
 
-    return filteredUsers
-  }, [STORAGE_KEY, sessionId])
 
-  const [userHistory, setUserHistory] = useState<OnlineUserInterface[]>(getStoredUsers)
+  const [userHistory, setUserHistory] = useState<OnlineUserInterface[]>([])
 
 
   const [activeUsers, setActiveUsers] = useState<OnlineUserInterface[]>([])
   const [autoJoin, setAutoJoin] = useState<boolean>(false)
 
-  // Reset states when sessionId changes
-  useEffect(() => {
 
-    if (sessionId) {
-      const storedUsers = getStoredUsers()
-      const onlineUsers = storedUsers.filter((user: OnlineUserInterface) => user.isOnline)
-
-
-      setUserHistory(storedUsers)
-      setActiveUsers(onlineUsers)
-    } else {
-      setUserHistory([])
-      setActiveUsers([])
-    }
-  }, [sessionId, getStoredUsers])
 
   // Update active users when status changes
   useEffect(() => {
@@ -80,6 +59,8 @@ export const useOnlineUsers = () => {
 
   const handleUserJoined = useCallback(
     (data: ServerUserJoinedSessionInterface) => {
+
+
       if (data.autoJoin) {
         setAutoJoin(true)
       }
@@ -133,10 +114,13 @@ export const useOnlineUsers = () => {
     [sessionId]
   )
 
+
+
   useEffect(() => {
     const unsubscribeUserJoined = subscribe(
       WS_MESSAGE_TYPES.SERVER_USER_JOINED_SESSION,
       (data: ServerUserJoinedSessionInterface) => {
+
         handleUserJoined(data)
       }
     )

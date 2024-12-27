@@ -13,6 +13,7 @@ import React, {
   useRef,
   useState
 } from "react";
+import { useParams } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
 import { useWebSocket } from "./WebSocketContext";
 
@@ -45,8 +46,10 @@ interface MessageWebSocketProviderProps {
 
 export const MessageWebSocketProvider: React.FC<
   MessageWebSocketProviderProps
-> = ({ children }) => {
-  const { sendMessage: wsSendMessage, currentUser, sessionId, subscribe } = useWebSocket()
+  > = ({ children }) => {
+
+  const { sessionId } = useParams()
+  const { sendMessage: wsSendMessage, currentUser,  subscribe } = useWebSocket()
   const [messages, setMessages] = useState<ChatMessageInterface[]>([])
   const lastMessageAction = useRef<string | null>(null);
 
@@ -106,21 +109,20 @@ export const MessageWebSocketProvider: React.FC<
     lastMessageAction.current = WS_MESSAGE_TYPES.SERVER_CHAT;
     const sessionData = local("json", sessionId).get(`sessionIdentifier`);
     if(message.sessionId !== sessionId) return;
+
     setMessages((prevMessages) => {
-      prevMessages = prevMessages.filter(msg => msg.sessionId === sessionId)
-      let newMessages
-      const existingMessageIndex = prevMessages.findIndex(
+      const currentSessionMessages = prevMessages.filter(msg => msg.sessionId === sessionId);
+      let newMessages;
+      const existingMessageIndex = currentSessionMessages.findIndex(
         (msg) => msg.messageId === message.messageId
-      )
+      );
 
       if (existingMessageIndex !== -1) {
-        newMessages = [...prevMessages]
-        newMessages[existingMessageIndex] = { ...message  }
+        newMessages = [...currentSessionMessages];
+        newMessages[existingMessageIndex] = { ...message };
       } else {
-        newMessages = [...prevMessages, { ...message }]
+        newMessages = [...currentSessionMessages, { ...message }];
       }
-
-
 
       local("json", sessionId).set(`sessionIdentifier`, {
         ...sessionData,
@@ -128,13 +130,11 @@ export const MessageWebSocketProvider: React.FC<
           ...currentUser,
           messages: newMessages,
         },
-      })
+      });
 
-
-      return newMessages
-    })
-  }, [currentUser, sessionId])
-
+      return newMessages;
+    });
+  }, [currentUser, sessionId]);
 
   const deduplicateMessages = useCallback((messages: ChatMessageInterface[]): ChatMessageInterface[] => {
     const seen = new Map()
@@ -175,7 +175,7 @@ export const MessageWebSocketProvider: React.FC<
         type: WS_MESSAGE_TYPES.CLIENT_SESSION_ACCEPTED_TO_JOIN,
         createdAt: getCurrentTimeStamp(),
         timestamp: getCurrentTimeStamp(),
-        sessionId,
+        sessionId: sessionId!,
         fullName: currentUser.fullName || "",
         userId: currentUser.userId || "",
         guestId: guestId || "",
@@ -185,7 +185,7 @@ export const MessageWebSocketProvider: React.FC<
         createdAt: getCurrentTimeStamp(),
         timestamp: getCurrentTimeStamp(),
         type: WS_MESSAGE_TYPES.CLIENT_SESSION_REJECTED_TO_JOIN,
-        sessionId,
+        sessionId: sessionId!,
         fullName: currentUser.fullName || "",
         userId: currentUser.userId || "",
         guestId: guestId || "",
@@ -314,32 +314,27 @@ export const MessageWebSocketProvider: React.FC<
     lastMessageAction.current = WS_MESSAGE_TYPES.SERVER_SESSION_MESSAGES;
 
     if (!session.messages) {
-
-      setMessages([])
+      setMessages([]);
+      return;
     }
 
+    setMessages(() => {
+      const currentSessionMessages = session.messages.filter(msg => msg.sessionId === sessionId);
+      const allMessages = [...currentSessionMessages] as ChatMessageInterface[];
+      const uniqueMessages = deduplicateMessages(allMessages);
 
+      const sessionData = local("json", sessionId).get(`sessionIdentifier`);
+      local("json", sessionId).set(`sessionIdentifier`, {
+        ...sessionData,
+        userIdentifier: {
+          ...currentUser,
+          messages: uniqueMessages,
+        },
+      });
 
-    setMessages((prevMessages) => {
-      const allMessages = [...prevMessages, ...(session.messages || [])] as ChatMessageInterface[]
-      const uniqueMessages = deduplicateMessages(allMessages)
-        const sessionData = local("json", sessionId).get(`sessionIdentifier`);
-
-        local("json", sessionId).set(`sessionIdentifier`, {
-          ...sessionData,
-          userIdentifier: {
-            ...currentUser,
-            messages: uniqueMessages,
-          },
-        })
-        return uniqueMessages
-      })
-    },
-    [currentUser, sessionId, deduplicateMessages]
-
-
-
-  )
+      return uniqueMessages;
+    });
+  }, [currentUser, sessionId, deduplicateMessages]);
 
 
   const updateSessionMessages = useCallback((messages: ChatMessageInterface[]) => {

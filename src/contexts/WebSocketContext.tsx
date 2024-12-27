@@ -10,6 +10,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 
 import { getCurrentTimeStamp, local } from '@/lib/utils';
 import { getWebSocketURL } from '@/lib/webSocket.config';
+import { useParams } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 
 
@@ -47,6 +48,7 @@ interface WebSocketContextType {
   setCurrentUser: (currentUser: CurrentUserInterface) => void;
   sendAuthMessage: (message: AuthMessageInterface) => void;
   serverAvailable: boolean;
+  switchSession: (sessionId: string) => void;
 }
 
 const WebSocketContext = createContext<WebSocketContextType | null>(null);
@@ -62,6 +64,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   children,
   url = getWebSocketURL() // Use environment-based URL as default
 }) => {
+  const { sessionId: sessionIdParam } = useParams()
   const [status, setStatus] = useState<ConnectionStatus>('disconnected');
   const wsRef = useRef<WebSocket | null>(null);
   const pingIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -70,7 +73,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   const stateRef = useRef<WebSocketState>({ reconnectCount: 0 });
   const isConnectingRef = useRef<boolean>(false);
   const [currentUser, setCurrentUser] = useState<CurrentUserInterface>({} as CurrentUserInterface);
-  const [sessionId, setSessionId] = useState<string>("");
+  const [sessionId, setSessionId] = useState<string>(sessionIdParam || "");
   const [serverAvailable, setServerAvailable] = useState(true);
 
 
@@ -371,12 +374,25 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     }
   }, []);
 
+  const switchSession = useCallback((sessionId: string) => {
+    const localSessionId = local('json', sessionId).get("sessionIdentifier");
+    if (localSessionId) {
+      sendAuthMessage({
+        type: WS_MESSAGE_TYPES.CLIENT_AUTH,
+        ...localSessionId.userIdentifier,
+        sessionId,
+        createdAt: getCurrentTimeStamp(),
+        connectionId: local('json', "appIdentifier").get("connectionId"),
+      });
+    }
+  }, [sendMessage]);
+
   const userJoinedSession = useCallback((message: ClientUserJoinedSessionInterface) => {
     if (status === 'connected' && message.userId) {
       sendMessage({
         ...message,
         sessionId: message.sessionId,
-        type: 'client_user_joined_session',
+        type: WS_MESSAGE_TYPES.CLIENT_USER_JOINED_SESSION,
         userId: message.userId,
         createdAt: getCurrentTimeStamp(),
         fullName: message.fullName,
@@ -396,7 +412,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     setCurrentUser,
     sessionId,
     setSessionId,
-    serverAvailable
+    serverAvailable,
+    switchSession
   }), [
     status,
     sendAuthMessage,
@@ -408,7 +425,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     setCurrentUser,
     sessionId,
     setSessionId,
-    serverAvailable
+    serverAvailable,
+    switchSession
   ]);
 
   return (

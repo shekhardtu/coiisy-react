@@ -22,6 +22,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { useWebSocket } from "@/contexts/WebSocketContext";
 import { Link } from "react-router-dom";
 
 export function ChatSidebarNavChannels({
@@ -36,6 +37,7 @@ export function ChatSidebarNavChannels({
   sessionId: string
 }) {
   const { isMobile } = useSidebar()
+const { switchSession } = useWebSocket()
 
 
   return (
@@ -49,7 +51,7 @@ export function ChatSidebarNavChannels({
                 className="text-sidebar-foreground/70"
                 to={item.url}
                 onClick={() => {
-                  console.log("item", item)
+                  switchSession(item?.url)
                 }}
               >
                 <item.icon />
