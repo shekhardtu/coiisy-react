@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { PopoverContent } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
-import { Copy, Edit, Heart, Trash } from "lucide-react";
+import { Copy, Edit, Trash } from "lucide-react";
 import { memo } from "react";
 import { ChatMessageInterface } from "../../coEditor/components/Editor.types";
 
@@ -13,6 +13,8 @@ interface ChatMessageActionsProps {
   onClose: () => void
   deleteMessage: (message: ChatMessageInterface) => void
   removeMessage: (messageId: string) => void
+  editMessage?: (messageId: string, newContent: string) => void
+  markMessageAsEditing: (messageId: string | null) => void
 }
 
 export function ChatMessageActions({
@@ -21,6 +23,7 @@ export function ChatMessageActions({
   onClose,
   deleteMessage,
   removeMessage,
+  markMessageAsEditing,
 }: ChatMessageActionsProps) {
   const { toast } = useToast()
 
@@ -40,6 +43,9 @@ export function ChatMessageActions({
         break
       case "remove":
         removeMessage(message.messageId)
+        break
+      case "edit":
+        markMessageAsEditing(message.messageId);
         break
     }
 
@@ -72,15 +78,7 @@ export function ChatMessageActions({
             </Button>
           )}
 
-          <Button
-              variant="ghost"
-              className="flex items-center gap-2 w-full justify-start hover:bg-gray-100/80
-              transition-colors duration-200 focus:ring-0 focus-visible:ring-2"
-              onClick={() => handleAction("favorite")}
-            >
-              <Heart size={16} className="text-gray-500" />
-              <span>Favorite</span>
-            </Button>
+
 
 
           {isOwnMessage && message.state?.some(s => s.state !== "deleted") && (

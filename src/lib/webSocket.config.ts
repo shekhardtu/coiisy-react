@@ -9,6 +9,9 @@ interface WebSocketConfig {
   connectionTimeout: number;
   healthCheckInterval: number;
   onlineTimeoutInMinutes: number;
+  pongTimeout: number;
+  keepAliveTimeout: number;
+  heartbeatEnabled: boolean;
 }
 
 const parseEnvBoolean = (value: string | undefined): boolean => {
@@ -18,29 +21,35 @@ const parseEnvBoolean = (value: string | undefined): boolean => {
 
 const developmentConfig: WebSocketConfig = {
   url: import.meta.env.VITE_WEBSOCKET_URL,
-  pingInterval:  import.meta.env.VITE_WS_PING_INTERVAL || 30000,
-  reconnectDelay:  import.meta.env.VITE_WS_RECONNECT_DELAY || 5000,
-  maxReconnectAttempts: import.meta.env.VITE_WS_MAX_RECONNECT_ATTEMPTS || 3,
-  enableStartupAutoConnect: parseEnvBoolean(import.meta.env.VITE_WS_ENABLE_STARTUP_AUTO_CONNECT) || false,
+  pingInterval: 30000,
+  reconnectDelay: 2000,
+  maxReconnectAttempts: 10,
+  enableStartupAutoConnect: true,
   autoConnectAfterDisconnect: parseEnvBoolean(import.meta.env.VITE_WS_AUTO_CONNECT_AFTER_DISCONNECT) || false,
   isSecure: false,
-  connectionTimeout: import.meta.env.VITE_WS_CONNECTION_TIMEOUT || 5000,
+  connectionTimeout: 10000,
   healthCheckInterval: import.meta.env.VITE_WS_HEALTH_CHECK_INTERVAL || 3000,
   onlineTimeoutInMinutes: import.meta.env.VITE_WS_ONLINE_TIMEOUT_IN_MINUTES || 5,
+  pongTimeout: 10000,
+  keepAliveTimeout: 60000,
+  heartbeatEnabled: true,
 };
 
 const productionConfig: WebSocketConfig = {
   url: import.meta.env.VITE_WEBSOCKET_URL,
-  pingInterval:  import.meta.env.VITE_WS_PING_INTERVAL || 60000,
-  reconnectDelay:  import.meta.env.VITE_WS_RECONNECT_DELAY || 10000,
-  maxReconnectAttempts: import.meta.env.VITE_WS_MAX_RECONNECT_ATTEMPTS || 5,
+  pingInterval: 60000,
+  reconnectDelay: 10000,
+  maxReconnectAttempts: 5,
   enableStartupAutoConnect: parseEnvBoolean(import.meta.env.VITE_WS_ENABLE_STARTUP_AUTO_CONNECT) || false,
   autoConnectAfterDisconnect: parseEnvBoolean(import.meta.env.VITE_WS_AUTO_CONNECT_AFTER_DISCONNECT) || false,
   isSecure: true,
-  connectionTimeout: import.meta.env.VITE_WS_CONNECTION_TIMEOUT || 5000,
+  connectionTimeout: 5000,
   healthCheckInterval: import.meta.env.VITE_WS_HEALTH_CHECK_INTERVAL || 3000,
   onlineTimeoutInMinutes: import.meta.env.VITE_WS_ONLINE_TIMEOUT_IN_MINUTES || 5,
-  };
+  pongTimeout: 10000,
+  keepAliveTimeout: 60000,
+  heartbeatEnabled: true,
+};
 
 export const wsConfig: WebSocketConfig =
   import.meta.env.PROD ? productionConfig : developmentConfig;

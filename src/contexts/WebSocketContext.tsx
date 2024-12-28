@@ -149,15 +149,34 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   }, []);
 
   const setupPingInterval = useCallback((ws: WebSocket, currentUser: CurrentUserInterface, sessionId: string) => {
-    clearPingInterval(); // Clear any existing interval firs  t
+    clearPingInterval();
 
     if (!currentUser || !sessionId) {
       console.warn('Missing user or session data for ping setup');
       return;
     }
 
+    let pongReceived = true;
+
+    // Add pong message handler
+    ws.addEventListener('pong', () => {
+      pongReceived = true;
+    });
+
     pingIntervalRef.current = setInterval(() => {
       if (ws.readyState === WebSocket.OPEN) {
+        if (!pongReceived) {
+          // No pong received, connection might be dead
+          console.warn('No pong received, reconnecting...');
+          if (status !== 'connected') {
+            console.log("status", status);
+            // disconnect();
+            tryConnect();
+          }
+          return;
+        }
+
+        pongReceived = false;
         const pingMessage = {
           userId: currentUser.userId,
           sessionId: sessionId || currentUser.sessionId,
@@ -252,7 +271,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     clearAllTimeouts();
 
     try {
-      const ws = new WebSocket(url);
+      const ws = new WebSocket(`${url}/ws?type=chat`);
 
 
       log('Initiating connection to:', url);
@@ -401,6 +420,37 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
       });
     }
   }, [sendMessage, status]);
+
+  // Add connection state detection
+  useEffect(() => {
+    const handleOnline = () => {
+      console.log('Device is online');
+      if (status !== 'connected') {
+        tryConnect();
+      }
+    };
+
+    const handleOffline = () => {
+      console.log('Device is offline');
+      disconnect();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && status !== 'connected') {
+        tryConnect();
+      }
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [status, tryConnect, disconnect]);
 
   const contextValue = useMemo<WebSocketContextType>(() => ({
     sendAuthMessage,

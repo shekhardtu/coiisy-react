@@ -1,5 +1,4 @@
 import {
-  Folder,
   Forward,
   LucideIcon,
   MoreHorizontal,
@@ -24,8 +23,9 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useWebSocket } from "@/contexts/WebSocketContext";
-import { local } from "@/lib/utils";
-import { useCallback, useEffect, useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { copyToClipboard, local } from "@/lib/utils";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { SessionDataInterface } from "../../coEditor/components/Editor.types";
 import useEditorContext from "../../coEditor/hooks/useEditor.contexthook";
@@ -65,6 +65,18 @@ export function ChatSidebarNavChannels({
   useEffect(() => {
     updateChannelList();
   }, [getChatSessionSidebarObject, updateChannelList]);
+
+
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [, setCopied] = useState(false)
+  const { toast } = useToast()
+
+  const showToast = (message: string) => {
+    toast({
+      title: message,
+      description:"Copied to clipboard",
+    })
+  }
 
   const handleDeleteSession = (toDeleteSessionId: string) => {
     const updatedSessions = channelList
@@ -135,13 +147,10 @@ export function ChatSidebarNavChannels({
                   side={isMobile ? "bottom" : "right"}
                   align={isMobile ? "end" : "start"}
                 >
-                  <DropdownMenuItem className="flex items-center gap-2 px-2 py-1.5">
-                    <Folder className="h-4 w-4 text-muted-foreground" />
-                    <span>View Project</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="flex items-center gap-2 px-2 py-1.5">
+
+                  <DropdownMenuItem className="flex items-center gap-2 px-2 py-1.5 cursor-pointer" onClick={(e) => copyToClipboard(e, `${window.location.host}/${item.url}`, inputRef, setCopied, showToast)}>
                     <Forward className="h-4 w-4 text-muted-foreground" />
-                    <span>Share Project</span>
+                    <span>Share Channel</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="my-1" />
                   <DropdownMenuItem

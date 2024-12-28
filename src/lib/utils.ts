@@ -241,4 +241,24 @@ export const getCurrentUser = (sessionId: string | undefined) => {
 
 export const getUnitsToMinutes = (units: number) => {
   return units * 60 * 1000;
+};
+
+
+export  const copyToClipboard = async (e: React.MouseEvent, url: string, inputRef: React.RefObject<HTMLInputElement>, setCopied: (value: boolean) => void, showToast: (message: string) => void) => {
+
+
+  // Prevent immediate propagation
+  e.stopPropagation()
+
+  try {
+    await navigator?.clipboard?.writeText(url)
+    inputRef.current?.select()
+    setCopied(true)
+    showToast("Share link to invite others")
+
+  } catch (err) {
+    console.error('Failed to copy text: ', err)
+  }
 }
+
+

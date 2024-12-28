@@ -143,7 +143,7 @@ export const useOnlineUsers = () => {
 
 
   return {
-    activeUsers,
+    activeUsers: activeUsers.filter((item, index, arr) => arr.findIndex(user => user.userId === item.userId) === index),
     users: userHistory,
     isUserAdmin,
     autoJoin,

@@ -8,6 +8,7 @@ import "./styles/global.css";
 import { Toaster } from "@/components/ui/toaster";
 import { client } from "@shekhardtu/tsoa-client/services.gen";
 import posthog from "posthog-js";
+import { NotificationProvider } from "./contexts/NotificationContext";
 import { WebSocketProvider } from "./contexts/WebSocketContext";
 import { getWebSocketURL } from "./lib/webSocket.config";
 
@@ -30,11 +31,13 @@ posthog.init("phc_14RTykDx36LKcstnpChxFgvWmthHCH1GCSOSxRqcE0n", {
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <WebSocketProvider url={getWebSocketURL()}>
-      <Dialog>
-        <TooltipProvider>
-          <Router />
-        </TooltipProvider>
-      </Dialog>
+      <NotificationProvider>
+        <Dialog>
+          <TooltipProvider>
+            <Router />
+          </TooltipProvider>
+        </Dialog>
+      </NotificationProvider>
       <Toaster />
     </WebSocketProvider>
   </React.StrictMode>

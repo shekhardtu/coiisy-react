@@ -2,7 +2,7 @@ import { useMessageWebSocket } from "@/contexts/MessageWebSocket.context";
 import { useViewport } from "@/contexts/Viewport.context";
 import { cn } from "@/lib/utils";
 import { Send } from "lucide-react";
-import React, { useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { ChatStatus, SessionStatusInterface } from "./chat.types";
 import ChatInputInfoBar from "./ChatInputInfoBar";
 
@@ -18,31 +18,49 @@ const ChatInput: React.FC<ChatInputProps> = ({
   scrollToBottom,
   tryConnect,
 }) => {
-  const { sendChatMessage } = useMessageWebSocket()
-  const inputRef = useRef<HTMLInputElement>(null)
+  const {
+    sendChatMessage,
+    editMessage,
+    editingMessageId,
+    editingMessageContent,
+    markMessageAsEditing,
+  } = useMessageWebSocket();
+
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [inputValue, setInputValue] = useState("");
+
+  // Update input value when editingMessageContent changes
+  useEffect(() => {
+    if (editingMessageContent !== null) {
+      setInputValue(editingMessageContent);
+    }
+  }, [editingMessageContent]);
 
   const handleSendMessage = () => {
-    if (
-      !inputRef.current ||
-      !inputRef.current.value.trim() ||
-      status !== "connected"
-    )
-      return
+    if (!inputRef.current || !inputRef.current.value.trim() || status !== "connected") return;
 
-    const messageContent = inputRef.current.value.trim()
-    sendChatMessage(messageContent)
+    const messageContent = inputRef.current.value.trim();
+
+    if (editingMessageId) {
+      // If editing, send edit message
+      editMessage(editingMessageId, messageContent);
+      markMessageAsEditing(null); // Reset editing state
+    } else {
+      // Otherwise, send a new message
+      sendChatMessage(messageContent);
+    }
 
     if (scrollToBottom) {
-      scrollToBottom()
+      scrollToBottom();
     }
-    inputRef.current.value = ""
-  }
+    setInputValue(""); // Clear input after sending
+  };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key !== "Enter") return
-    e.preventDefault()
-    handleSendMessage()
-  }
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    handleSendMessage();
+  };
   const { keyboardVisible, isKeyboardSupported } = useViewport()
 
   return (
@@ -65,8 +83,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
       >
         <form
           onSubmit={(e) => {
-            e.preventDefault()
-            handleSendMessage()
+            e.preventDefault();
+            handleSendMessage();
           }}
           className="flex items-center gap-2 max-w-full"
         >
@@ -74,16 +92,21 @@ const ChatInput: React.FC<ChatInputProps> = ({
             <input
               type="text"
               ref={inputRef}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyPress}
               placeholder={
                 status === "connected"
-                  ? "Type a message..."
+                  ? editingMessageId
+                    ? "Editing message..."
+                    : "Type a message..."
                   : "Connecting to chat..."
               }
               aria-label="Chat message"
-              className="w-full px-4 py-2.5 text-base bg-input text-foreground rounded-full
-                focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50
-                placeholder:text-muted-foreground/70"
+              className={cn(
+                "w-full px-4 py-2.5 text-base rounded-full focus:outline-none focus:ring-2 disabled:opacity-50 placeholder:text-muted-foreground/70",
+                editingMessageId ? "bg-yellow-100 border-yellow-500" : "bg-input text-foreground"
+              )}
             />
             {status === "connected" && (
               <span
@@ -96,15 +119,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
           </div>
           <button
             type="button"
-            onClick={async (e) => {
-              e.preventDefault()
-              e.stopPropagation()
-
-              if (inputRef.current) {
-                inputRef.current.focus()
-              }
-              handleSendMessage()
-            }}
+            onClick={handleSendMessage}
             disabled={status !== "connected"}
             aria-label="Send message"
             className="min-w-[44px] min-h-[44px] p-3 bg-primary text-primary-foreground rounded-full

@@ -42,7 +42,7 @@ const ChatMessage = React.memo(
         lastSeenAt: new Date(),
       })
     }, [message.userId, message.fullName, activeUsers])
-    const { deleteMessage, removeMessage } = useMessageWebSocket()
+    const { deleteMessage, removeMessage, editMessage, markMessageAsEditing } = useMessageWebSocket()
 
     const chatMessageActionProps = useMemo(() => ({
       message,
@@ -51,7 +51,9 @@ const ChatMessage = React.memo(
       onClose: () => setIsOpen(false),
       deleteMessage,
       removeMessage,
-    }), [message, isOwnMessage, isOpen, deleteMessage, removeMessage])
+      editMessage,
+      markMessageAsEditing,
+    }), [message, isOwnMessage, isOpen, deleteMessage, removeMessage, editMessage, markMessageAsEditing])
 
     const chatMessageStateProps = useMemo(() => ({
       activeUsers,
@@ -59,7 +61,9 @@ const ChatMessage = React.memo(
       currentUser,
     }), [activeUsers, message, currentUser])
 
-
+    const isDeleted = useMemo(() => {
+      return Array.isArray(message?.state) && message.state.find((state) => state?.state === "deleted")
+    }, [message.state])
 
     return (
       <div
@@ -73,26 +77,28 @@ const ChatMessage = React.memo(
           ref={messageBubbleRef}
 
         >
-          <Popover open={isOpen} onOpenChange={setIsOpen}>
-            <PopoverTrigger asChild>
-              <button
-                className={`opacity-0 group-hover:opacity-100 transition-all duration-200
-                  p-1.5 hover:bg-gray-100 rounded-full absolute top-0
-                  ${isOpen ? "opacity-100 bg-gray-100" : ""}
-                   active:scale-95 z-10`}
-                style={{
-                  [isOwnMessage ? "right" : "left"]: `${
-                    (messageBubbleRef.current?.offsetWidth ?? 0) + 4
-                  }px`,
-                }}
-              >
-                <MoreVertical size={16} className="text-gray-500" />
-              </button>
-            </PopoverTrigger>
-            <ChatMessageActions
-              {...chatMessageActionProps}
-            />
-          </Popover>
+          {!isDeleted && (
+            <Popover open={isOpen} onOpenChange={setIsOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  className={`opacity-0 group-hover:opacity-100 transition-all duration-200
+                    p-1.5 hover:bg-gray-100 rounded-full absolute top-0
+                    ${isOpen ? "opacity-100 bg-gray-100" : ""}
+                     active:scale-95 z-10`}
+                  style={{
+                    [isOwnMessage ? "right" : "left"]: `${
+                      (messageBubbleRef.current?.offsetWidth ?? 0) + 4
+                    }px`,
+                  }}
+                >
+                  <MoreVertical size={16} className="text-gray-500" />
+                </button>
+              </PopoverTrigger>
+              <ChatMessageActions
+                {...chatMessageActionProps}
+              />
+            </Popover>
+          )}
 
           <div className="flex flex-row gap-1">
             {message.userId !== currentUser?.userId &&

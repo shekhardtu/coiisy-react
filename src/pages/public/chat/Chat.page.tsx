@@ -154,7 +154,6 @@ const ChatPage: React.FC = () => {
 
 
 
-
   return (
     <div className="chat_container overflow-hidden" role="main" aria-label="Chat interface">
       <ChatHeader {...headerProps} />

@@ -23,7 +23,9 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ currentUser, scrollToBottom
   const { activeUsers } = useOnlineUsers();
 
   // Get messages for current session
+
   const currentSessionMessages = messagesBySession.get(sessionId!) || [];
+
 
   useEffect(() => {
     if (currentSessionMessages.length > 0) {
