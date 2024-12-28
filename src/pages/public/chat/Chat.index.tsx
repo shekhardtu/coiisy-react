@@ -452,11 +452,6 @@ const SessionInput = ({ show, onClose }: { show: boolean; onClose: () => void; }
         <ChannelModal
           isOpen={show}
           onClose={onClose}
-          onJoin={() => {}}
-          sessionName={""}
-          sessionUrl={window.location.href}
-          onlineCount={0}
-          totalCount={0}
         />
       </div>
     </div>

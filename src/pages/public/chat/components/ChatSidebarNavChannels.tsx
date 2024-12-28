@@ -1,10 +1,10 @@
 import {
   Folder,
   Forward,
+  LucideIcon,
   MoreHorizontal,
   Plus,
-  Trash2,
-  type LucideIcon,
+  Trash2
 } from "lucide-react";
 
 import {
@@ -25,65 +25,89 @@ import {
 } from "@/components/ui/sidebar";
 import { useWebSocket } from "@/contexts/WebSocketContext";
 import { local } from "@/lib/utils";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { SessionDataInterface } from "../../coEditor/components/Editor.types";
+import useEditorContext from "../../coEditor/hooks/useEditor.contexthook";
 import { ChannelModal } from "./ChannelModal";
 
-interface SessionData {
-  sessionId: string;
+// Add interface definitions for better type safety
+interface Channel {
+  name: string | undefined;
   url: string;
-  // add other session properties as needed
+  icon: LucideIcon;
+  session: SessionDataInterface;
+}
+
+interface ChatSidebarNavChannelsProps {
+  sessionId: string;
+  onNewChannel: (channelId: string) => void;
 }
 
 export function ChatSidebarNavChannels({
-  projects,
   sessionId,
-}: {
-  projects: {
-    name: string
-    url: string
-    icon: LucideIcon
-  }[]
-  sessionId: string
-}) {
-  const { isMobile } = useSidebar()
-const { switchSession } = useWebSocket()
-const [showNewChannelModal, setShowNewChannelModal] = useState(false);
-const navigate = useNavigate();
-  const handleDeleteSession = (sessionUrl: string) => {
-    // Remove from localStorage
-    const savedSessions = local("json", "sessionIdentifier").getAll();
+  onNewChannel,
+}: ChatSidebarNavChannelsProps) {
+  const { isMobile, setOpenMobile } = useSidebar();
+  const { switchSession } = useWebSocket();
+  const [showChannelModal, setShowChannelModal] = useState(false);
+  const [channelList, setChannelList] = useState<Channel[]>([]);
+  const navigate = useNavigate();
+  const { getChatSessionSidebarObject } = useEditorContext();
+
+  // Move useEffect logic to a separate function for better readability
+  const updateChannelList = useCallback(() => {
+    const chatSessionsArray = getChatSessionSidebarObject()
+      .filter((channel): channel is Channel => channel.name !== undefined);
+    setChannelList(chatSessionsArray);
+  }, [getChatSessionSidebarObject]);
+
+  useEffect(() => {
+    updateChannelList();
+  }, [getChatSessionSidebarObject, updateChannelList]);
+
+  const handleDeleteSession = (toDeleteSessionId: string) => {
+    const updatedSessions = channelList
+      .map(item => item.name)
+      .filter(session => session !== toDeleteSessionId);
+
+    local("json", toDeleteSessionId).remove("sessionIdentifier");
 
 
-    const updatedSessions = savedSessions
-      .map(item => Object.values(item)[0])
-      .filter((session: SessionData) => {
-        return session.sessionId !== sessionUrl;
-      });
-
-    local("json", sessionUrl).remove("sessionIdentifier");
-    // navigate to the first session
-
-    navigate(updatedSessions[0].sessionId);
-    switchSession(updatedSessions[0].url)
-
-
-
-    // If there are remaining sessions, switch to the first one
-    // Otherwise, show the new channel modal
-    if (updatedSessions.length > 0) {
-      switchSession(updatedSessions[0].url);
-    } else {
-      setShowNewChannelModal(true);
+    if (sessionId !== toDeleteSessionId) {
+      navigate(updatedSessions[0] as string);
+      switchSession(updatedSessions[0] as string);
     }
+
+    if(sessionId == toDeleteSessionId){
+      navigate(updatedSessions[0] as string);
+      switchSession(updatedSessions[0] as string);
+    }
+
+    updateChannelList();
+
+    if (updatedSessions.length > 0) {
+      switchSession(updatedSessions[0] as string);
+    } else {
+      setShowChannelModal(true);
+    }
+  };
+
+  const handleNewChannel = () => {
+    setShowChannelModal(true);
+  };
+
+  const handleChannelCreated = (channelId: string) => {
+    setShowChannelModal(false);
+    onNewChannel(channelId);
   };
 
   return (
     <>
-      <SidebarGroup className="group-data-[collapsible=icon]:hidden text-sidebar-foreground/70" key={sessionId+projects.length}>
+      <SidebarGroup className="group-data-[collapsible=icon]:hidden text-sidebar-foreground/70" key={sessionId+channelList.length}>
         <SidebarGroupLabel>Anonymous Channels</SidebarGroupLabel>
         <SidebarMenu>
-          {projects.map((item) => (
+          {channelList.map((item) => (
             <SidebarMenuItem key={item.name} className="flex justify-center items-center">
               <SidebarMenuButton asChild className="h-7">
                 <Link
@@ -91,6 +115,7 @@ const navigate = useNavigate();
                   to={item.url}
                   onClick={() => {
                     switchSession(item?.url)
+                    setOpenMobile(false)
                   }}
                 >
                   <item.icon />
@@ -133,7 +158,7 @@ const navigate = useNavigate();
           <SidebarMenuItem>
             <SidebarMenuButton
               className="text-sidebar-foreground/70"
-              onClick={() => setShowNewChannelModal(true)}
+              onClick={handleNewChannel}
             >
               <Plus className="text-sidebar-foreground/70" />
               <span>New Channel</span>
@@ -143,18 +168,9 @@ const navigate = useNavigate();
       </SidebarGroup>
 
       <ChannelModal
-        isOpen={showNewChannelModal}
-        onClose={() => {
-          // Only allow closing the modal if there are existing sessions
-          if (projects.length > 0) {
-            setShowNewChannelModal(false);
-          }
-        }}
-        onJoin={() => {}}
-        sessionName=""
-        sessionUrl={window.location.href}
-        onlineCount={0}
-        totalCount={0}
+        isOpen={showChannelModal}
+        onClose={() => setShowChannelModal(false)}
+        onSubmit={handleChannelCreated}
       />
     </>
   )
