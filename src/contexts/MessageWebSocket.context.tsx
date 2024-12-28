@@ -3,7 +3,7 @@ import {
   WS_MESSAGE_TYPES
 } from "@/lib/webSocket.config";
 import { SessionStatusInterface } from "@/pages/public/chat/components/chat.types";
-import { ChatMessageInterface, ClientSessionAcceptedToJoinInterface, ClientSessionRejectedToJoinInterface, ServerSessionMessagesInterface, ServerUserRequestToJoinSessionToAdminInterface, SessionHandlerActionInterface } from "@/pages/public/coEditor/components/Editor.types";
+import { ChatMessageInterface, ClientSessionAcceptedToJoinInterface, ClientSessionRejectedToJoinInterface, MessageState, ServerSessionMessagesInterface, ServerUserRequestToJoinSessionToAdminInterface, SessionHandlerActionInterface } from "@/pages/public/coEditor/components/Editor.types";
 import React, {
   createContext,
   useCallback,
@@ -70,6 +70,7 @@ export const MessageWebSocketProvider: React.FC<
       }
 
       const messageId = uuidv4()
+      const timestamp = getCurrentTimeStamp()
 
       const messageData: ChatMessageInterface = {
         messageId,
@@ -78,32 +79,54 @@ export const MessageWebSocketProvider: React.FC<
         userId: currentUser.userId,
         fullName: currentUser.fullName || "",
         content,
-        createdAt: getCurrentTimeStamp(),
+        createdAt: timestamp,
       }
 
-      // Update local messages immediately
-      setMessages((prev) => [
+      // Update both messages and messagesBySession immediately
+      const newMessage = {
+        ...messageData,
+        state: [{ state: "sending" as MessageState, userId: currentUser.userId!, messageMongoId: "" }]
+      }
+
+      setMessages(prev => [
         ...prev.filter(msg => msg.sessionId === sessionId),
-        { ...messageData, state: [{state: "sending", userId: currentUser.userId!, messageMongoId: ""}] },
+        newMessage
       ])
 
-      try {
-        // Send to websocket
-        wsSendMessage(messageData)
-         // Update local messages immediately
+      setMessagesBySession(prev => {
+        const newMap = new Map(prev)
+        const sessionMessages = newMap.get(sessionId) || []
+        newMap.set(sessionId, [...sessionMessages, newMessage])
+        return newMap
+      })
 
-        lastMessageAction.current = WS_MESSAGE_TYPES.CLIENT_CHAT;
+      // Send to websocket
+      try {
+        wsSendMessage(messageData)
+        lastMessageAction.current = WS_MESSAGE_TYPES.CLIENT_CHAT
         return messageData
       } catch (error) {
-        console.error('Failed to send message:', error);
-        // Update message state to failed
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.messageId === messageId && msg.sessionId === sessionId
-              ? { ...msg, state: [{state: "failed", userId: currentUser.userId!, messageMongoId: ""}] }
-              : msg
+        console.error('Failed to send message:', error)
+        // Update failed state in both messages and messagesBySession
+        const failedMessage = {
+          ...newMessage,
+          state: [{ state: "failed" as MessageState, userId: currentUser.userId!, messageMongoId: "" }]
+        }
+
+        setMessages(prev =>
+          prev.map(msg =>
+            msg.messageId === messageId ? failedMessage : msg
           )
-        );
+        )
+
+        setMessagesBySession(prev => {
+          const newMap = new Map(prev)
+          const sessionMessages = newMap.get(sessionId) || []
+          newMap.set(sessionId, sessionMessages.map(msg =>
+            msg.messageId === messageId ? failedMessage : msg
+          ))
+          return newMap
+        })
       }
     },
     [currentUser, sessionId, wsSendMessage]
