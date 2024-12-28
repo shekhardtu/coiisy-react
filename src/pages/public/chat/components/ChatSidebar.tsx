@@ -5,14 +5,12 @@ import {
   SidebarHeader,
   SidebarRail
 } from "@/components/ui/sidebar";
-import {
-  LucideIcon
-} from "lucide-react";
 import { ChatSidebarNavChannels } from "./ChatSidebarNavChannels";
 
 interface AppSidebarProps {
-  chatSessions: { name: string; url: string; icon: LucideIcon }[]
+
   sessionId: string
+  onNewChannel: (channelId: string) => void
 }
 
 // const data = {
@@ -144,13 +142,13 @@ interface AppSidebarProps {
 //   ],
 // }
 
-export function AppSidebar({ chatSessions, sessionId }: AppSidebarProps) {
+export function AppSidebar({ sessionId, onNewChannel }: AppSidebarProps) {
   return (
     <Sidebar>
       <SidebarHeader />
       <SidebarContent>
         {/* <NavMain items={data.navMain} /> */}
-        <ChatSidebarNavChannels projects={chatSessions} sessionId={sessionId} />
+        <ChatSidebarNavChannels sessionId={sessionId} onNewChannel={onNewChannel} />
       </SidebarContent>
       {/* <SidebarFooter>
         <NavUser user={data.user} />

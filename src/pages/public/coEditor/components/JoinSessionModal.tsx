@@ -7,6 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { useWebSocket } from "@/contexts/WebSocketContext";
 import { useToast } from "@/hooks/use-toast";
 import { useViewport } from "@/hooks/useViewport.hook";
 import { cn, sanitizeChannelId } from "@/lib/utils";
@@ -105,13 +106,17 @@ export function JoinSessionModal({
     }
   }, [isOpen]);
 
+  const { switchSession } = useWebSocket();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName.trim()) return;
 
     setIsSubmitting(true);
+
     try {
       await onJoin(fullName.trim());
+      switchSession(sessionName!);
     } finally {
       setIsSubmitting(false);
     }

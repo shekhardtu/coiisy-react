@@ -15,7 +15,12 @@ interface EditorContextType {
   handleThemeChange: (newTheme: "light" | "dark") => void;
   setSessionId: (sessionId: string | undefined) => void;
   sessionId: string | undefined;
-
+  getChatSessionSidebarObject: () => {
+    name: string | undefined;
+    url: string;
+    icon: LucideIcon;
+    session: SessionDataInterface;
+  }[];
 
   setSessionStats: (sessionStats: { onlineCount: number; totalCount: number }) => void;
   isHeaderVisible: boolean;
@@ -85,8 +90,7 @@ export const EditorProvider: React.FC<{
   }, []);
 
 
-
-  useEffect(() => {
+  const getChatSessionSidebarObject = useCallback(() => {
     const chatSessions = local('json', "sessionIdentifier").getAll();
 
     const chatSessionsArray = chatSessions.map((session) => {
@@ -99,8 +103,14 @@ export const EditorProvider: React.FC<{
         session: sessionObject
       }
     });
+    return chatSessionsArray;
+  }, []);
+
+
+  useEffect(() => {
+    const chatSessionsArray = getChatSessionSidebarObject();
     setChatSessions(chatSessionsArray);
-  }, [sessionData]);
+  }, [getChatSessionSidebarObject, sessionData]);
 
 
 
@@ -204,7 +214,8 @@ export const EditorProvider: React.FC<{
     setIsHeaderVisible,
     handleHeaderVisibility,
     chatSessions,
-    setChatSessions
+    setChatSessions,
+    getChatSessionSidebarObject
   }), [
     theme,
     cursorPosition,
@@ -215,7 +226,8 @@ export const EditorProvider: React.FC<{
     sessionStats,
     isHeaderVisible,
     handleHeaderVisibility,
-    chatSessions
+    chatSessions,
+    getChatSessionSidebarObject
   ]);
 
 

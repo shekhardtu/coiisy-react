@@ -28,10 +28,10 @@ const ChatLayoutContent: React.FC<{ existingSessionId: string | undefined }> = (
     theme,
     sessionData,
     setSessionData,
-    chatSessions,
   } = useEditorContext();
 
   useEffect(() => {
+    setIsJoinModalOpen(false);
     if (existingSessionId) {
       const savedSessionData = local("json", existingSessionId).get(`sessionIdentifier`);
 
@@ -85,9 +85,17 @@ const ChatLayoutContent: React.FC<{ existingSessionId: string | undefined }> = (
     totalCount: 0,
   };
 
+
+
+  const handleNewChannel = useCallback((channelId: string) => {
+    setSessionData(null);
+    navigate(`/${channelId}`);
+    setIsJoinModalOpen(true);
+  }, [setSessionData, navigate]);
+
   return (
     <div className="flex flex-col h-full relative overflow-x-hidden overflow-y-hidden">
-      {!sessionData?.sessionId ? (
+      {(!sessionData?.sessionId && !sessionData?.userIdentifier) || isJoinModalOpen ? (
         <div className="absolute top-0 left-0 w-full z-50">
           <JoinSessionModal
             isOpen={isJoinModalOpen}
@@ -106,7 +114,10 @@ const ChatLayoutContent: React.FC<{ existingSessionId: string | undefined }> = (
         }>
             <EditorErrorBoundary>
               <SidebarProvider className="flex flex-1 h-full w-full flex-row">
-                <AppSidebar chatSessions={chatSessions as []} sessionId={sessionData.sessionId} />
+                <AppSidebar
+                  sessionId={sessionData.sessionId!}
+                  onNewChannel={handleNewChannel}
+                />
                 <Outlet context={{ theme, sessionId: sessionData.sessionId, sidebarTrigger: <SidebarTrigger  /> }} />
               </SidebarProvider>
             </EditorErrorBoundary>

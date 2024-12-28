@@ -6,6 +6,7 @@ import {
   DialogTitle
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { useWebSocket } from "@/contexts/WebSocketContext";
 import { useViewport } from "@/hooks/useViewport.hook";
 import { cn, sanitizeChannelId } from "@/lib/utils";
 import { X } from "lucide-react";
@@ -72,17 +73,14 @@ const colorConfigs = [
 
 interface ChannelModalProps {
   isOpen: boolean;
-  onJoin: (fullName: string) => void;
-  sessionName: string | undefined;
-  sessionUrl: string;
-  onlineCount: number;
-  totalCount: number;
   onClose: () => void;
+  onSubmit?: (channelId: string) => void;
 }
 
 export function ChannelModal({
   isOpen,
-  onClose
+  onClose,
+  onSubmit
 }: ChannelModalProps) {
   const navigate = useNavigate();
 
@@ -100,13 +98,22 @@ export function ChannelModal({
     }
   }, [isOpen]);
 
+  const { switchSession } = useWebSocket();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (onSubmit) {
+      onSubmit(channelId);
+    }
 
     if (channelId.length < 4) return;
     if (channelId.length >= 4) {
       try {
+
         navigate(`/${channelId}`);
+        switchSession(channelId);
+        onClose();
+
       } finally {
         onClose();
       }
