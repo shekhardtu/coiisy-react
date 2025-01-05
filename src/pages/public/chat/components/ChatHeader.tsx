@@ -6,6 +6,7 @@ interface ChatHeaderProps {
   status: ChatStatus["status"]
   tryConnect: ChatStatus["tryConnect"]
   activeUsers: OnlineUserInterface[]
+  guestUsers: OnlineUserInterface[]
   className?: string
 }
 
@@ -31,18 +32,19 @@ import { NavActions } from "./NavActions";
 const ChatHeader: React.FC<ChatHeaderProps> = ({
   status,
   activeUsers,
+      guestUsers
 }) => {
 
 
   const { sidebarTrigger } = useOutletContext() as { sidebarTrigger: React.ReactNode };
   const { keyboardVisible, isKeyboardSupported } = useViewport()
-  const { tryConnect } = useWebSocket()
+  const { tryConnect, currentUser } = useWebSocket()
   const urlRef = useRef(window.location.href)
   const { sessionId } = useParams()
 
   const renderUserStatus = useMemo(() => {
     if (activeUsers.length > 0 && status === 'connected' && sessionId) {
-      return <UserAvatars users={activeUsers} size="sm"  />
+      return <UserAvatars users={guestUsers} size="sm"  />
     }
 
     if (status === 'connected' || status === 'connecting') {
@@ -63,6 +65,12 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
       </div>
     )
   }, [activeUsers, status, sessionId, tryConnect])
+
+  const currentUserOnline: OnlineUserInterface | undefined = useMemo(() => {
+    return activeUsers.find(user => user.userId === currentUser?.userId)
+  }, [activeUsers, currentUser])
+
+
 
   return (
     <header
@@ -91,7 +99,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            <PulseDot status={status} />
+            <PulseDot status={status} currentUser={currentUserOnline!} />
             <div className="border border-border rounded-sm">
               <NavActions />
             </div>

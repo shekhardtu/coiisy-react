@@ -150,7 +150,8 @@ const ChatPage: React.FC = () => {
     status,
     tryConnect,
     activeUsers,
-  }), [status, tryConnect, activeUsers]);
+    guestUsers: activeUsers.filter(user => user.userId !== currentUser?.userId)
+  }), [status, tryConnect, activeUsers, currentUser?.userId]);
 
   const chatInputRef = useRef<HTMLDivElement>(null);
 
