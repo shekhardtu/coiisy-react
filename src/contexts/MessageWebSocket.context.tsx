@@ -82,6 +82,9 @@ interface MessageWebSocketProviderProps {
   children: React.ReactNode
 }
 
+// Move the debounce duration constant outside
+const TYPING_DEBOUNCE_THROTTLE_DURATION = 2000
+
 export const MessageWebSocketProvider: React.FC<
   MessageWebSocketProviderProps
 > = ({ children }) => {
@@ -108,7 +111,7 @@ export const MessageWebSocketProvider: React.FC<
     Map<string, ChatMessageInterface[]>
   >(new Map())
 
-  const throttleAndDebounceDuration = 1000
+
 
   const { soundEnabled } = useNotification()
   NotificationSound.init()
@@ -127,7 +130,7 @@ export const MessageWebSocketProvider: React.FC<
       connectionId: connectionId!,
     }
     wsSendMessage(clientTypingUser)
-  }, throttleAndDebounceDuration)
+  }, TYPING_DEBOUNCE_THROTTLE_DURATION)
 
   const handleClientTyping = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -135,7 +138,7 @@ export const MessageWebSocketProvider: React.FC<
         throttledTypingHandler()
       }
     },
-    []
+    [throttledTypingHandler]
   )
 
   useEffect(() => {
@@ -314,10 +317,20 @@ export const MessageWebSocketProvider: React.FC<
     []
   )
 
-  // Define clearTypingUsers outside of any component or hook
-  const clearTypingUsers = debounce(() => {
-    setTypingUsers([])
-  }, throttleAndDebounceDuration)
+  // Create the debounced function using useCallback to maintain reference stability
+  const clearTypingUsersDebounce = useCallback(
+    debounce(() => {
+      setTypingUsers([])
+    }, TYPING_DEBOUNCE_THROTTLE_DURATION),
+    [] // Empty dependencies since it doesn't depend on any props or state
+  )
+
+  // Add cleanup for the debounced function
+  useEffect(() => {
+    return () => {
+      clearTypingUsersDebounce.cancel()
+    }
+  }, [clearTypingUsersDebounce])
 
   const markMessageAsEditing = useCallback(
     (messageId: string | null) => {
@@ -688,10 +701,22 @@ export const MessageWebSocketProvider: React.FC<
   const handleServerTypingUsers = useCallback(
     (message: ServerTypingUserInterface) => {
       if (message.sessionId !== sessionId) return
+
+      // Add the typing user
       setTypingUsers((prev) => [
         ...prev.filter((user) => user.userId !== message.userId),
         message,
       ])
+
+      // Create a timeout to remove this specific user after the debounce period
+      const timeoutId = setTimeout(() => {
+        setTypingUsers((prev) =>
+          prev.filter((user) => user.userId !== message.userId)
+        )
+      }, TYPING_DEBOUNCE_THROTTLE_DURATION)
+
+      // Clean up the timeout if we receive another typing event
+      return () => clearTimeout(timeoutId)
     },
     [sessionId]
   )
@@ -742,7 +767,8 @@ export const MessageWebSocketProvider: React.FC<
 
       // Cancel throttled and debounced functions
       throttledTypingHandler.cancel()
-      clearTypingUsers.cancel()
+
+      clearTypingUsersDebounce.cancel()
     }
   }, [
     subscribe,
@@ -759,7 +785,7 @@ export const MessageWebSocketProvider: React.FC<
     handleServerChatEdit,
     handleServerTypingUsers,
     throttledTypingHandler,
-    clearTypingUsers,
+    clearTypingUsersDebounce,
   ])
 
   const contextValue = useMemo(
@@ -790,7 +816,7 @@ export const MessageWebSocketProvider: React.FC<
       typingUsers,
       setTypingUsers,
       handleClientTyping,
-      clearTypingUsers,
+      clearTypingUsersDebounce,
     }),
     [
       handleClientTyping,
@@ -819,7 +845,7 @@ export const MessageWebSocketProvider: React.FC<
       setEditingMessageContent,
       typingUsers,
       setTypingUsers,
-      clearTypingUsers,
+      clearTypingUsersDebounce,
     ]
   )
 

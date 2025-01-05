@@ -15,12 +15,9 @@ interface UserAvatarsProps {
 const UsersAvatars: React.FC<UserAvatarsProps> = ({ users, size = 'default' }) => {
   const sizeClass = AVATAR_SIZE_CLASSES[size];
   const { sessionId } = useParams();
-
-
-
   return (
     <div className={cn("flex items-center", sizeClass.spacing)}>
-      {users.filter(user => user.sessionId === sessionId).map((user) => user.isShow && (
+      {users.filter(user => user.sessionId === sessionId && user.isShow).map((user) => (
         <UserAvatar key={user.userId} user={user} size={size} />
       ))}
     </div>

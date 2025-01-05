@@ -11,7 +11,7 @@ import {
 
 
 export const useOnlineUsers = () => {
-  const { status, subscribe } = useWebSocket()
+  const { status, subscribe, currentUser } = useWebSocket()
   const { sessionId } = useParams()
   if (!sessionId) {
     throw new Error('sessionId is required for useOnlineUsers hook')
@@ -144,6 +144,7 @@ export const useOnlineUsers = () => {
 
   return {
     activeUsers: activeUsers.filter((item, index, arr) => arr.findIndex(user => user.userId === item.userId) === index),
+    guestUsers: activeUsers.filter(user => user.userId !== currentUser?.userId),
     users: userHistory,
     isUserAdmin,
     autoJoin,
