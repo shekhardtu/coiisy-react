@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from 'date-fns';
 import { User } from "lucide-react";
 import React, { useEffect, useRef, useState } from 'react';
-import { OnlineUserInterface } from './Editor.types';
+import { OnlineUserInterface, ServerTypingUserInterface } from './Editor.types';
 
 
 
@@ -64,7 +64,7 @@ const formatDateToISO = (date: Date | string | number): string => {
 };
 
 interface SingleAvatarProps {
-  user?: OnlineUserInterface;
+  user?: OnlineUserInterface | ServerTypingUserInterface;
   size?: 'sm' | 'xs' | 'default';
   showTooltip?: boolean;
 }
@@ -116,12 +116,16 @@ const UserAvatar: React.FC<SingleAvatarProps> = ({
         "relative flex items-center justify-center rounded-full transition-all duration-200 hover:opacity-80 border-2 border-transparent hover:border-border cursor-pointer ring-2 ring-background",
         sizeClass.container,
         user.isOnline ? "bg-green-100 dark:bg-green-900/50" : "bg-muted",
+        "animate-opacity duration-100"
       )}
       onClick={(e) => {
         e.stopPropagation();
         if (showTooltip) {
           setIsTooltipOpen(!isTooltipOpen);
         }
+      }}
+      onAnimationEnd={(e) => {
+        e.currentTarget.style.opacity = '1';
       }}
     >
       {user.initials ? (
@@ -177,12 +181,12 @@ const UserAvatar: React.FC<SingleAvatarProps> = ({
             </div>
             <div
               className="text-sm text-muted-foreground"
-              title={user?.isOnline ? formatDateToISO(user.connectedAt) : formatDateToISO(user.lastSeenAt)}
+              title={user?.isOnline ? formatDateToISO(user.connectedAt!) : formatDateToISO(user.lastSeenAt!)}
             >
               {user?.isOnline ? (
-                <p>Connected {formatDate(user?.connectedAt)}</p>
+                <p>Connected {formatDate(user.connectedAt!)}</p>
               ) : (
-                <p>Last seen {formatDate(user?.lastSeenAt)}</p>
+                  <p>Last seen {formatDate(user.lastSeenAt!)}</p>
               )}
             </div>
           </div>

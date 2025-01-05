@@ -148,7 +148,7 @@ export function JoinSessionModal({
   };
 
   const generateRandomUsername = () => {
-    const username = generateUsername('-', 2);
+    const username = generateUsername('-', 2, 10);
     setFullName(username);
   };
 

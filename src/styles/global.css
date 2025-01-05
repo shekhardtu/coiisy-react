@@ -255,3 +255,16 @@
   stroke-dasharray: 20;
   animation: draw-checks 0.8s ease forwards;
 }
+
+.animate-opacity {
+  animation: fadeIn 1s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

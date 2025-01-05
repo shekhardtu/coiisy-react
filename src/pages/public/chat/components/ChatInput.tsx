@@ -26,6 +26,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
     editingMessageId,
     editingMessageContent,
     markMessageAsEditing,
+    handleClientTyping,
+
   } = useMessageWebSocket();
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -113,7 +115,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
               )}
               rows={1}
               style={{ resize: "none", overflow: "hidden" }}
-              onInput={(e) => {
+              onInput={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+                handleClientTyping(e);
                 const target = e.target as HTMLTextAreaElement;
                 target.style.height = "auto";
                 const newHeight = Math.min(target.scrollHeight, 2 * parseFloat(getComputedStyle(target).lineHeight));

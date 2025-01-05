@@ -1,10 +1,21 @@
-import { NotificationSound } from '@/lib/audio.utils';
+import { NotificationSound } from "@/lib/audio.utils";
 import { getCurrentTimeStamp, local } from "@/lib/utils";
-import {
-  WS_MESSAGE_TYPES
-} from "@/lib/webSocket.config";
+import { WS_MESSAGE_TYPES } from "@/lib/webSocket.config";
 import { SessionStatusInterface } from "@/pages/public/chat/components/chat.types";
-import { ChatMessageInterface, ClientSessionAcceptedToJoinInterface, ClientSessionRejectedToJoinInterface, MessageState, ServerSessionMessagesInterface, ServerUserRequestToJoinSessionToAdminInterface, SessionHandlerActionInterface } from "@/pages/public/coEditor/components/Editor.types";
+import {
+  ChatMessageInterface,
+  ClientSessionAcceptedToJoinInterface,
+  ClientSessionRejectedToJoinInterface,
+  ClientTypingUserInterface,
+  MessageState,
+  OnlineUserInterface,
+  ServerSessionMessagesInterface,
+  ServerTypingUserInterface,
+  ServerUserRequestToJoinSessionToAdminInterface,
+  SessionHandlerActionInterface,
+} from "@/pages/public/coEditor/components/Editor.types";
+import debounce from "lodash/debounce";
+import throttle from "lodash/throttle";
 import React, {
   createContext,
   useCallback,
@@ -12,36 +23,56 @@ import React, {
   useEffect,
   useMemo,
   useRef,
-  useState
+  useState,
 } from "react";
 import { useParams } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
-import { useNotification } from './NotificationContext';
+import { useNotification } from "./NotificationContext";
 import { useWebSocket } from "./WebSocketContext";
 
 interface MessageWebSocketContextType {
-  sessionHandler: (action: SessionHandlerActionInterface, userId?: string) => void
+  sessionHandler: (
+    action: SessionHandlerActionInterface,
+    userId?: string
+  ) => void
 
   editMessage: (messageId: string, newContent: string) => void
   deleteMessage: (message: ChatMessageInterface) => void
   reactToMessage: (messageId: string, emoji: string) => void
   removeReaction: (messageId: string, emoji: string) => void
   messages: ChatMessageInterface[]
-  sessionStatus: SessionStatusInterface['sessionStatus']
-  setSessionStatus: React.Dispatch<React.SetStateAction<SessionStatusInterface['sessionStatus']>>
+  sessionStatus: SessionStatusInterface["sessionStatus"]
+  setSessionStatus: React.Dispatch<
+    React.SetStateAction<SessionStatusInterface["sessionStatus"]>
+  >
   setMessages: React.Dispatch<React.SetStateAction<ChatMessageInterface[]>>
-  deduplicateMessages: (messages: ChatMessageInterface[]) => ChatMessageInterface[]
+  deduplicateMessages: (
+    messages: ChatMessageInterface[]
+  ) => ChatMessageInterface[]
   lastMessageAction: React.MutableRefObject<string | null>
   removeMessage: (messageId: string) => void
   sendChatMessage: (content: string) => void
   updateSessionMessages: (messages: ChatMessageInterface[]) => void
-  userGuestRequestToJoinSession: ServerUserRequestToJoinSessionToAdminInterface | undefined
-  setUserGuestRequestToJoinSession: React.Dispatch<React.SetStateAction<ServerUserRequestToJoinSessionToAdminInterface | undefined>>
+  userGuestRequestToJoinSession:
+    | ServerUserRequestToJoinSessionToAdminInterface
+    | undefined
+  setUserGuestRequestToJoinSession: React.Dispatch<
+    React.SetStateAction<
+      ServerUserRequestToJoinSessionToAdminInterface | undefined
+    >
+  >
   messagesBySession: Map<string, ChatMessageInterface[]>
-  setMessagesBySession: React.Dispatch<React.SetStateAction<Map<string, ChatMessageInterface[]>>>;
-  markMessageAsEditing: (messageId: string | null) => void;
-  editingMessageId: string | null;
-  editingMessageContent: string | null;
+  setMessagesBySession: React.Dispatch<
+    React.SetStateAction<Map<string, ChatMessageInterface[]>>
+  >
+  markMessageAsEditing: (messageId: string | null) => void
+  editingMessageId: string | null
+  editingMessageContent: string | null
+  typingUsers: ServerTypingUserInterface[]
+  setTypingUsers: React.Dispatch<
+    React.SetStateAction<ServerTypingUserInterface[]>
+  >
+  handleClientTyping: (e: React.ChangeEvent<HTMLTextAreaElement>) => void
 }
 
 const MessageWebSocketContext =
@@ -53,22 +84,66 @@ interface MessageWebSocketProviderProps {
 
 export const MessageWebSocketProvider: React.FC<
   MessageWebSocketProviderProps
-  > = ({ children }) => {
-
+> = ({ children }) => {
   const { sessionId } = useParams()
-  const { sendMessage: wsSendMessage, currentUser,  subscribe } = useWebSocket()
+  const {
+    sendMessage: wsSendMessage,
+    currentUser,
+    subscribe,
+    connectionId,
+  } = useWebSocket()
   const [messages, setMessages] = useState<ChatMessageInterface[]>([])
-  const lastMessageAction = useRef<string | null>(null);
+  const lastMessageAction = useRef<string | null>(null)
 
-  const [sessionStatus, setSessionStatus] = useState<SessionStatusInterface['sessionStatus']>("joined")
-  const [userGuestRequestToJoinSession, setUserGuestRequestToJoinSession] = useState<ServerUserRequestToJoinSessionToAdminInterface | undefined>(undefined);
+  const [sessionStatus, setSessionStatus] =
+    useState<SessionStatusInterface["sessionStatus"]>("joined")
+  const [userGuestRequestToJoinSession, setUserGuestRequestToJoinSession] =
+    useState<ServerUserRequestToJoinSessionToAdminInterface | undefined>(
+      undefined
+    )
 
   // const [userRequestToJoinSessionQueue, setUserRequestToJoinSessionQueue] = useState<ClientUserRequestToJoinSessionInterface[]>([])
 
-  const [messagesBySession, setMessagesBySession] = useState<Map<string, ChatMessageInterface[]>>(new Map());
+  const [messagesBySession, setMessagesBySession] = useState<
+    Map<string, ChatMessageInterface[]>
+  >(new Map())
 
-    const { soundEnabled } = useNotification();
-    NotificationSound.init()
+  const throttleAndDebounceDuration = 1000
+
+  const { soundEnabled } = useNotification()
+  NotificationSound.init()
+
+  // Create a throttled function
+  const throttledTypingHandler = throttle(() => {
+    const { userIdentifier: currentUser } = local("json", sessionId).get(
+      `sessionIdentifier`
+    ) as { userIdentifier: OnlineUserInterface }
+
+    const clientTypingUser: ClientTypingUserInterface = {
+      type: WS_MESSAGE_TYPES.CLIENT_CHAT_USER_TYPING,
+      userId: currentUser.userId,
+      fullName: currentUser.fullName,
+      sessionId: sessionId!,
+      connectionId: connectionId!,
+    }
+    wsSendMessage(clientTypingUser)
+  }, throttleAndDebounceDuration)
+
+  const handleClientTyping = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      if (e.target.value.length > 0) {
+        throttledTypingHandler()
+      }
+    },
+    []
+  )
+
+  useEffect(() => {
+    return () => {
+      throttledTypingHandler.cancel()
+      throttledTypingHandler.flush()
+    }
+  }, [])
 
   const sendChatMessage = useCallback(
     (content: string) => {
@@ -93,15 +168,21 @@ export const MessageWebSocketProvider: React.FC<
       // Update both messages and messagesBySession immediately
       const newMessage = {
         ...messageData,
-        state: [{ state: "sending" as MessageState, userId: currentUser.userId!, messageMongoId: "" }]
+        state: [
+          {
+            state: "sending" as MessageState,
+            userId: currentUser.userId!,
+            messageMongoId: "",
+          },
+        ],
       }
 
-      setMessages(prev => [
-        ...prev.filter(msg => msg.sessionId === sessionId),
-        newMessage
+      setMessages((prev) => [
+        ...prev.filter((msg) => msg.sessionId === sessionId),
+        newMessage,
       ])
 
-      setMessagesBySession(prev => {
+      setMessagesBySession((prev) => {
         const newMap = new Map(prev)
         const sessionMessages = newMap.get(sessionId) || []
         newMap.set(sessionId, [...sessionMessages, newMessage])
@@ -110,31 +191,37 @@ export const MessageWebSocketProvider: React.FC<
 
       // Send to websocket
       try {
-
         wsSendMessage(messageData)
 
         lastMessageAction.current = WS_MESSAGE_TYPES.CLIENT_CHAT
         return messageData
       } catch (error) {
-        console.error('Failed to send message:', error)
+        console.error("Failed to send message:", error)
         // Update failed state in both messages and messagesBySession
         const failedMessage = {
           ...newMessage,
-          state: [{ state: "failed" as MessageState, userId: currentUser.userId!, messageMongoId: "" }]
+          state: [
+            {
+              state: "failed" as MessageState,
+              userId: currentUser.userId!,
+              messageMongoId: "",
+            },
+          ],
         }
 
-        setMessages(prev =>
-          prev.map(msg =>
-            msg.messageId === messageId ? failedMessage : msg
-          )
+        setMessages((prev) =>
+          prev.map((msg) => (msg.messageId === messageId ? failedMessage : msg))
         )
 
-        setMessagesBySession(prev => {
+        setMessagesBySession((prev) => {
           const newMap = new Map(prev)
           const sessionMessages = newMap.get(sessionId) || []
-          newMap.set(sessionId, sessionMessages.map(msg =>
-            msg.messageId === messageId ? failedMessage : msg
-          ))
+          newMap.set(
+            sessionId,
+            sessionMessages.map((msg) =>
+              msg.messageId === messageId ? failedMessage : msg
+            )
+          )
           return newMap
         })
       }
@@ -142,86 +229,118 @@ export const MessageWebSocketProvider: React.FC<
     [currentUser, sessionId, wsSendMessage]
   )
 
-  const handleNewMessage = useCallback((message: ChatMessageInterface) => {
-    if (
-      document.hidden &&
-      soundEnabled &&
-      message.userId !== currentUser.userId &&
-      message.type === WS_MESSAGE_TYPES.SERVER_CHAT
-    ) {
-
-      NotificationSound.play()
-    }
-  }, [currentUser.userId, soundEnabled]);
-
-  const handleServerChatMessages = useCallback((message: ChatMessageInterface) => {
-    lastMessageAction.current = WS_MESSAGE_TYPES.SERVER_CHAT;
-
-    handleNewMessage(message);
-
-
-    setMessagesBySession((prev: Map<string, ChatMessageInterface[]>) => {
-      const newMap = new Map(prev);
-      const sessionMessages = newMap.get(message.sessionId) || [];
-      const updatedMessages = [...sessionMessages];
-
-      const existingIndex = updatedMessages.findIndex(msg => msg.messageId === message.messageId);
-      if (existingIndex !== -1) {
-        updatedMessages[existingIndex] = message;
-      } else {
-        updatedMessages.push(message);
+  const handleNewMessage = useCallback(
+    (message: ChatMessageInterface) => {
+      if (
+        document.hidden &&
+        soundEnabled &&
+        message.userId !== currentUser.userId &&
+        message.type === WS_MESSAGE_TYPES.SERVER_CHAT
+      ) {
+        NotificationSound.play()
       }
+    },
+    [currentUser.userId, soundEnabled]
+  )
 
-      newMap.set(message.sessionId, updatedMessages);
-      return newMap;
-    });
+  const handleServerChatMessages = useCallback(
+    (message: ChatMessageInterface) => {
+      lastMessageAction.current = WS_MESSAGE_TYPES.SERVER_CHAT
 
-    // Update local storage for current session
-    if (message.sessionId === sessionId) {
-      const sessionData = local("json", sessionId).get(`sessionIdentifier`);
-      local("json", sessionId).set(`sessionIdentifier`, {
-        ...sessionData,
-        userIdentifier: {
-          ...currentUser,
-          messages: messagesBySession.get(sessionId) || [],
-        },
-      });
-    }
-  }, [currentUser, sessionId, messagesBySession, handleNewMessage]);
+      if (message.sessionId !== sessionId) return
 
-  const deduplicateMessages = useCallback((messages: ChatMessageInterface[]): ChatMessageInterface[] => {
-    const seen = new Map()
-    // reverse to keep the latest in the array and remove duplicates
-    return messages.reverse().filter((msg) => {
-      if (seen.has(msg.messageId)) {
-        return false
+      handleNewMessage(message)
+
+      setMessagesBySession((prev: Map<string, ChatMessageInterface[]>) => {
+        const newMap = new Map(prev)
+        const sessionMessages = newMap.get(message.sessionId) || []
+        const updatedMessages = [...sessionMessages]
+
+        const existingIndex = updatedMessages.findIndex(
+          (msg) => msg.messageId === message.messageId
+        )
+        if (existingIndex !== -1) {
+          updatedMessages[existingIndex] = message
+        } else {
+          updatedMessages.push(message)
+        }
+
+        newMap.set(message.sessionId, updatedMessages)
+        return newMap
+      })
+
+      // Update local storage for current session
+      if (message.sessionId === sessionId) {
+        const sessionData = local("json", sessionId).get(`sessionIdentifier`)
+        local("json", sessionId).set(`sessionIdentifier`, {
+          ...sessionData,
+          userIdentifier: {
+            ...currentUser,
+            messages: messagesBySession.get(sessionId) || [],
+          },
+        })
       }
-      seen.set(msg.messageId, true)
-      return true
-    }).reverse()
-  }, [])
+      // remove user from typing users if they sent the typed message
+      setTypingUsers((prev) => [
+        ...prev.filter((user) => user.userId !== message.userId),
+      ])
+    },
+    [currentUser, sessionId, messagesBySession, handleNewMessage]
+  )
 
-    const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
-    const [editingMessageContent, setEditingMessageContent] = useState<string | null>(null);
+  const deduplicateMessages = useCallback(
+    (messages: ChatMessageInterface[]): ChatMessageInterface[] => {
+      const seen = new Map()
+      // reverse to keep the latest in the array and remove duplicates
+      return messages
+        .reverse()
+        .filter((msg) => {
+          if (seen.has(msg.messageId)) {
+            return false
+          }
+          seen.set(msg.messageId, true)
+          return true
+        })
+        .reverse()
+    },
+    []
+  )
 
-    const markMessageAsEditing = useCallback((messageId: string | null) => {
-      setEditingMessageId(messageId);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
+  const [editingMessageContent, setEditingMessageContent] = useState<
+    string | null
+  >(null)
+  const [typingUsers, setTypingUsers] = useState<ServerTypingUserInterface[]>(
+    []
+  )
+
+  // Define clearTypingUsers outside of any component or hook
+  const clearTypingUsers = debounce(() => {
+    setTypingUsers([])
+  }, throttleAndDebounceDuration)
+
+  const markMessageAsEditing = useCallback(
+    (messageId: string | null) => {
+      setEditingMessageId(messageId)
 
       if (messageId) {
-        const sessionMessages = messagesBySession.get(sessionId!) || [];
-        const messageContent = sessionMessages.find(message => message.messageId === messageId)?.content;
+        const sessionMessages = messagesBySession.get(sessionId!) || []
+        const messageContent = sessionMessages.find(
+          (message) => message.messageId === messageId
+        )?.content
         if (messageContent) {
-          setEditingMessageContent(messageContent);
+          setEditingMessageContent(messageContent)
         }
       } else {
-        setEditingMessageContent(null);
+        setEditingMessageContent(null)
       }
-    }, [messagesBySession, sessionId]);
+    },
+    [messagesBySession, sessionId]
+  )
 
   const editMessage = useCallback(
     (messageId: string, newContent: string) => {
-      if (!currentUser?.userId || !sessionId) return;
-      console.log("editMessage", messageId, newContent);
+      if (!currentUser?.userId || !sessionId) return
 
       // Send the edit message to the server
       wsSendMessage({
@@ -233,122 +352,140 @@ export const MessageWebSocketProvider: React.FC<
         createdAt: getCurrentTimeStamp(),
         fullName: currentUser?.fullName || "",
         state: "sending",
-      });
+      })
 
       // Update messagesBySession
-      setMessagesBySession(prev => {
-        const newMap = new Map(prev);
-        const sessionMessages = newMap.get(sessionId) || [];
-        const updatedMessages = sessionMessages.map(message =>
+      setMessagesBySession((prev) => {
+        const newMap = new Map(prev)
+        const sessionMessages = newMap.get(sessionId) || []
+        const updatedMessages = sessionMessages.map((message) =>
           message.messageId === messageId
             ? { ...message, content: newContent }
             : message
-        );
-        newMap.set(sessionId, updatedMessages);
-        return newMap;
-      });
+        )
+        newMap.set(sessionId, updatedMessages)
+        return newMap
+      })
 
       // Update local storage
-      const storedMessages = JSON.parse(localStorage.getItem("messagesBySession") || "{}");
-      storedMessages[sessionId] = storedMessages[sessionId]?.map((message: ChatMessageInterface) =>
-        message.messageId === messageId
-          ? { ...message, content: newContent }
-          : message
-      ) || [];
-      localStorage.setItem("messagesBySession", JSON.stringify(storedMessages));
+      const storedMessages = JSON.parse(
+        localStorage.getItem("messagesBySession") || "{}"
+      )
+      storedMessages[sessionId] =
+        storedMessages[sessionId]?.map((message: ChatMessageInterface) =>
+          message.messageId === messageId
+            ? { ...message, content: newContent }
+            : message
+        ) || []
+      localStorage.setItem("messagesBySession", JSON.stringify(storedMessages))
 
       // Reset editing state
-      setEditingMessageId(null);
-      setEditingMessageContent(null);
+      setEditingMessageId(null)
+      setEditingMessageContent(null)
     },
     [currentUser, sessionId, wsSendMessage, setMessagesBySession]
-  );
+  )
 
+  const sessionHandler = useCallback(
+    (action: SessionHandlerActionInterface, guestId?: string) => {
+      let clientMessage:
+        | ClientSessionAcceptedToJoinInterface
+        | ClientSessionRejectedToJoinInterface
+        | undefined
+      // Add logic to add user to session if sessionStatus is requestedToJoin
+      if (action === "acceptedToJoin" && sessionId) {
+        clientMessage = {
+          type: WS_MESSAGE_TYPES.CLIENT_SESSION_ACCEPTED_TO_JOIN,
+          createdAt: getCurrentTimeStamp(),
+          timestamp: getCurrentTimeStamp(),
+          sessionId: sessionId!,
+          fullName: currentUser.fullName || "",
+          userId: currentUser.userId || "",
+          guestId: guestId || "",
+        }
+      } else if (action === "rejectedToJoin" && sessionId) {
+        clientMessage = {
+          createdAt: getCurrentTimeStamp(),
+          timestamp: getCurrentTimeStamp(),
+          type: WS_MESSAGE_TYPES.CLIENT_SESSION_REJECTED_TO_JOIN,
+          sessionId: sessionId!,
+          fullName: currentUser.fullName || "",
+          userId: currentUser.userId || "",
+          guestId: guestId || "",
+        }
 
-  const sessionHandler = useCallback((action: SessionHandlerActionInterface, guestId?: string) => {
-    let clientMessage: ClientSessionAcceptedToJoinInterface | ClientSessionRejectedToJoinInterface | undefined;
-// Add logic to add user to session if sessionStatus is requestedToJoin
-    if (action === "acceptedToJoin" && sessionId) {
-      clientMessage = {
-        type: WS_MESSAGE_TYPES.CLIENT_SESSION_ACCEPTED_TO_JOIN,
-        createdAt: getCurrentTimeStamp(),
-        timestamp: getCurrentTimeStamp(),
-        sessionId: sessionId!,
-        fullName: currentUser.fullName || "",
-        userId: currentUser.userId || "",
-        guestId: guestId || "",
+        // userGuestRequestToJoinSession
+      } else {
+        clientMessage = undefined
       }
-    } else if (action === "rejectedToJoin" && sessionId) {
-      clientMessage = {
-        createdAt: getCurrentTimeStamp(),
-        timestamp: getCurrentTimeStamp(),
-        type: WS_MESSAGE_TYPES.CLIENT_SESSION_REJECTED_TO_JOIN,
-        sessionId: sessionId!,
-        fullName: currentUser.fullName || "",
-        userId: currentUser.userId || "",
-        guestId: guestId || "",
+
+      setUserGuestRequestToJoinSession((prev) => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          type: "server_session_user_request_to_join_session_to_admin",
+          guests: prev.guests.filter((guest) => guest.userId !== guestId),
+        }
+      })
+
+      setSessionStatus("joined")
+
+      if (clientMessage) {
+        wsSendMessage(clientMessage)
       }
-
-      // userGuestRequestToJoinSession
-
-
-    } else {
-      clientMessage = undefined;
-    }
-
-    setUserGuestRequestToJoinSession((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        type: "server_session_user_request_to_join_session_to_admin",
-        guests: prev.guests.filter((guest) => guest.userId !== guestId)
-      }
-    })
-
-    setSessionStatus("joined")
-
-    if (clientMessage) {
-      wsSendMessage(clientMessage)
-    }
-
-
-
-
-  }, [currentUser, sessionId, wsSendMessage])
-
+    },
+    [currentUser, sessionId, wsSendMessage]
+  )
 
   const deleteMessage = useCallback(
     (message: ChatMessageInterface) => {
       if (!currentUser.userId || !sessionId) return
-      lastMessageAction.current = WS_MESSAGE_TYPES.CLIENT_CHAT_DELETE;
+      lastMessageAction.current = WS_MESSAGE_TYPES.CLIENT_CHAT_DELETE
 
       const updatedMessage = {
         ...message,
         content: "Message has been deleted",
-        state: [{state: "deleted" as MessageState, userId: currentUser.userId!, messageMongoId: message.messageId}]
-      };
+        state: [
+          {
+            state: "deleted" as MessageState,
+            userId: currentUser.userId!,
+            messageMongoId: message.messageId,
+          },
+        ],
+      }
 
       // Update messages state
-      setMessages(prevMessages => {
-        prevMessages = prevMessages.filter(msg => msg.sessionId === sessionId)
-        return prevMessages.map(msg =>
-          msg.messageId === message.messageId ? {
-            ...msg,
-            content: "Message has been deleted",
-            state: [{state: "deleted" as MessageState, userId: currentUser.userId!, messageMongoId: msg.messageId}]
-          } : msg
+      setMessages((prevMessages) => {
+        prevMessages = prevMessages.filter((msg) => msg.sessionId === sessionId)
+        return prevMessages.map((msg) =>
+          msg.messageId === message.messageId
+            ? {
+                ...msg,
+                content: "Message has been deleted",
+                state: [
+                  {
+                    state: "deleted" as MessageState,
+                    userId: currentUser.userId!,
+                    messageMongoId: msg.messageId,
+                  },
+                ],
+              }
+            : msg
         )
-      });
+      })
 
       // Update messagesBySession state
-      setMessagesBySession(prev => {
-        const newMap = new Map(prev);
-        const sessionMessages = newMap.get(sessionId) || [];
-        newMap.set(sessionId, sessionMessages.map(msg =>
-          msg.messageId === message.messageId ? updatedMessage : msg
-        ));
-        return newMap;
-      });
+      setMessagesBySession((prev) => {
+        const newMap = new Map(prev)
+        const sessionMessages = newMap.get(sessionId) || []
+        newMap.set(
+          sessionId,
+          sessionMessages.map((msg) =>
+            msg.messageId === message.messageId ? updatedMessage : msg
+          )
+        )
+        return newMap
+      })
 
       wsSendMessage({
         ...message,
@@ -357,11 +494,17 @@ export const MessageWebSocketProvider: React.FC<
         messageId: message.messageId,
         userId: currentUser.userId,
         sessionId,
-        content: '',
+        content: "",
         createdAt: getCurrentTimeStamp(),
-        fullName: currentUser?.fullName || '',
-        state: [{state: "deleted", userId: currentUser.userId!, messageMongoId: message._id!}],
-      });
+        fullName: currentUser?.fullName || "",
+        state: [
+          {
+            state: "deleted",
+            userId: currentUser.userId!,
+            messageMongoId: message._id!,
+          },
+        ],
+      })
     },
     [currentUser, sessionId, wsSendMessage]
   )
@@ -386,7 +529,6 @@ export const MessageWebSocketProvider: React.FC<
 
   const removeReaction = useCallback(
     (messageId: string, emoji: string) => {
-
       if (!currentUser?.userId || !sessionId) return
 
       wsSendMessage({
@@ -403,157 +545,171 @@ export const MessageWebSocketProvider: React.FC<
     [currentUser, sessionId, wsSendMessage]
   )
 
-
-
-  const removeMessage = useCallback((messageId: string) => {
-
-    setMessages(prevMessages => prevMessages.filter(msg => msg.messageId !== messageId))
-    lastMessageAction.current = WS_MESSAGE_TYPES.CLIENT_CHAT_REMOVE;
-    if (!currentUser?.userId || !sessionId) return
-    wsSendMessage({
-      type: WS_MESSAGE_TYPES.CLIENT_CHAT_REMOVE,
-      messageId,
-      userId: currentUser?.userId || '',
-      sessionId,
-      content: '',
-      createdAt: getCurrentTimeStamp(),
-      fullName: currentUser?.fullName || '',
-      state: [{state: "removed", userId: currentUser.userId, messageMongoId: ""}],
-    });
-
-  }, [currentUser, sessionId, wsSendMessage])
-
-
-
-
-  const handleSessionReloadMessages = useCallback((session: ServerSessionMessagesInterface) => {
-    lastMessageAction.current = WS_MESSAGE_TYPES.SERVER_SESSION_MESSAGES;
-
-
-    if (!session.messages) {
-      setMessagesBySession(new Map());
-      return;
-    }
-
-    setMessagesBySession(prevMap => {
-      const newMap = new Map(prevMap);
-      const messagesGroupedBySession = new Map<string, ChatMessageInterface[]>();
-
-      session.messages.forEach(msg => {
-
-        const sessionMessages = messagesGroupedBySession.get(msg.sessionId) || [];
-        sessionMessages.push(msg);
-        messagesGroupedBySession.set(msg.sessionId, sessionMessages);
-      });
-
-      // Merge with existing messages
-      messagesGroupedBySession.forEach((messages, sessionId) => {
-        const uniqueMessages = deduplicateMessages(messages);
-        newMap.set(sessionId, uniqueMessages);
-      });
-
-      return newMap;
-    });
-  }, [deduplicateMessages]);
-
-
-  const updateSessionMessages = useCallback((messages: ChatMessageInterface[]) => {
-
-    if (messages.some(message => message.sessionId !== sessionId)) return;
-
-    setMessages(prevMessages => {
-      prevMessages = prevMessages.filter(message => message.sessionId === sessionId)
-      // update props of previous messages
-      const updatedMessages = prevMessages.map((msg) => {
-        const message = messages.find(m => m.messageId === msg.messageId)
-        return {
-          ...msg,
-          content: message?.content,
-          state: message?.state
-        }
+  const removeMessage = useCallback(
+    (messageId: string) => {
+      setMessages((prevMessages) =>
+        prevMessages.filter((msg) => msg.messageId !== messageId)
+      )
+      lastMessageAction.current = WS_MESSAGE_TYPES.CLIENT_CHAT_REMOVE
+      if (!currentUser?.userId || !sessionId) return
+      wsSendMessage({
+        type: WS_MESSAGE_TYPES.CLIENT_CHAT_REMOVE,
+        messageId,
+        userId: currentUser?.userId || "",
+        sessionId,
+        content: "",
+        createdAt: getCurrentTimeStamp(),
+        fullName: currentUser?.fullName || "",
+        state: [
+          { state: "removed", userId: currentUser.userId, messageMongoId: "" },
+        ],
       })
+    },
+    [currentUser, sessionId, wsSendMessage]
+  )
 
-      const allMessages = [...updatedMessages] as ChatMessageInterface[]
-      const uniqueMessages = deduplicateMessages(allMessages)
+  const handleSessionReloadMessages = useCallback(
+    (session: ServerSessionMessagesInterface) => {
+      lastMessageAction.current = WS_MESSAGE_TYPES.SERVER_SESSION_MESSAGES
 
+      if (!session.messages) {
+        setMessagesBySession(new Map())
+        return
+      }
 
-      return uniqueMessages
-    })
-  }, [setMessages, deduplicateMessages])
+      setMessagesBySession((prevMap) => {
+        const newMap = new Map(prevMap)
+        const messagesGroupedBySession = new Map<
+          string,
+          ChatMessageInterface[]
+        >()
+
+        session.messages.forEach((msg) => {
+          const sessionMessages =
+            messagesGroupedBySession.get(msg.sessionId) || []
+          sessionMessages.push(msg)
+          messagesGroupedBySession.set(msg.sessionId, sessionMessages)
+        })
+
+        // Merge with existing messages
+        messagesGroupedBySession.forEach((messages, sessionId) => {
+          const uniqueMessages = deduplicateMessages(messages)
+          newMap.set(sessionId, uniqueMessages)
+        })
+
+        return newMap
+      })
+    },
+    [deduplicateMessages]
+  )
+
+  const updateSessionMessages = useCallback(
+    (messages: ChatMessageInterface[]) => {
+      if (messages.some((message) => message.sessionId !== sessionId)) return
+
+      setMessages((prevMessages) => {
+        prevMessages = prevMessages.filter(
+          (message) => message.sessionId === sessionId
+        )
+        // update props of previous messages
+        const updatedMessages = prevMessages.map((msg) => {
+          const message = messages.find((m) => m.messageId === msg.messageId)
+          return {
+            ...msg,
+            content: message?.content,
+            state: message?.state,
+          }
+        })
+
+        const allMessages = [...updatedMessages] as ChatMessageInterface[]
+        const uniqueMessages = deduplicateMessages(allMessages)
+
+        return uniqueMessages
+      })
+    },
+    [sessionId, deduplicateMessages]
+  )
 
   const handleServerChatDelete = useCallback(
     (message: ChatMessageInterface) => {
-      lastMessageAction.current = WS_MESSAGE_TYPES.SERVER_CHAT_DELETE;
-      if(message.sessionId !== sessionId) return;
+      lastMessageAction.current = WS_MESSAGE_TYPES.SERVER_CHAT_DELETE
+      if (message.sessionId !== sessionId) return
 
-      setMessages(prevMessages =>
-        prevMessages.filter(msg => msg.sessionId === sessionId).map(msg =>
-          msg.messageId === message.messageId
-              ? message
-            : msg
-        )
-      );
+      setMessages((prevMessages) =>
+        prevMessages
+          .filter((msg) => msg.sessionId === sessionId)
+          .map((msg) => (msg.messageId === message.messageId ? message : msg))
+      )
     },
     [setMessages]
   )
 
+  const handleJoinSessionByAdmin = useCallback(
+    (session: ServerUserRequestToJoinSessionToAdminInterface) => {
+      setUserGuestRequestToJoinSession(session)
 
-
-  const handleJoinSessionByAdmin = useCallback((session: ServerUserRequestToJoinSessionToAdminInterface) => {
-
-    setUserGuestRequestToJoinSession(session);
-
-    const request = "requestedToJoin"
-    setSessionStatus(request);
-
-  }, []);
+      const request = "requestedToJoin"
+      setSessionStatus(request)
+    },
+    []
+  )
 
   const handleJoinSessionByGuest = useCallback(() => {
     const request = "requestReceivedToJoin"
     setSessionStatus(request)
   }, [])
 
+  const handleServerChatEdit = useCallback(
+    (message: ChatMessageInterface) => {
+      lastMessageAction.current = WS_MESSAGE_TYPES.SERVER_CHAT_EDIT
 
-  const handleServerChatEdit = useCallback((message: ChatMessageInterface) => {
-    lastMessageAction.current = WS_MESSAGE_TYPES.SERVER_CHAT_EDIT;
+      if (message.sessionId !== sessionId) return
 
-    if (message.sessionId !== sessionId) return;
-
-    setMessages(prevMessages =>
-      prevMessages.map(msg =>
-        msg.messageId === message.messageId
-          ? { ...msg, ...message }
-          : msg
+      setMessages((prevMessages) =>
+        prevMessages.map((msg) =>
+          msg.messageId === message.messageId ? { ...msg, ...message } : msg
+        )
       )
-    );
 
-    // Update messagesBySession
-    setMessagesBySession(prev => {
-      const newMap = new Map(prev);
-      const sessionMessages = newMap.get(sessionId) || [];
-      const updatedMessages = sessionMessages.map(msg =>
-        msg.messageId === message.messageId
-          ? { ...msg, ...message }
-          : msg
-      );
-      newMap.set(sessionId, updatedMessages);
-      return newMap;
-    });
-  }, [setMessages, setMessagesBySession, sessionId]);
+      // Update messagesBySession
+      setMessagesBySession((prev) => {
+        const newMap = new Map(prev)
+        const sessionMessages = newMap.get(sessionId) || []
+        const updatedMessages = sessionMessages.map((msg) =>
+          msg.messageId === message.messageId ? { ...msg, ...message } : msg
+        )
+        newMap.set(sessionId, updatedMessages)
+        return newMap
+      })
+    },
+    [setMessages, setMessagesBySession, sessionId]
+  )
 
-
+  const handleServerTypingUsers = useCallback(
+    (message: ServerTypingUserInterface) => {
+      if (message.sessionId !== sessionId) return
+      setTypingUsers((prev) => [
+        ...prev.filter((user) => user.userId !== message.userId),
+        message,
+      ])
+    },
+    [sessionId]
+  )
 
   useEffect(() => {
+    const unsubscribeTypingUsers = subscribe(
+      WS_MESSAGE_TYPES.SERVER_CHAT_USER_TYPING,
+      handleServerTypingUsers
+    )
     const unsubscribeServerChatDelete = subscribe(
       WS_MESSAGE_TYPES.SERVER_CHAT_DELETE,
       handleServerChatDelete
-    );
+    )
 
     const unsubscribeServerChatEdit = subscribe(
       WS_MESSAGE_TYPES.SERVER_CHAT_EDIT,
       handleServerChatEdit
     )
-
 
     const unsubscribeSessionReload = subscribe(
       WS_MESSAGE_TYPES.SERVER_SESSION_MESSAGES,
@@ -576,15 +732,19 @@ export const MessageWebSocketProvider: React.FC<
     )
 
     return () => {
+      unsubscribeTypingUsers()
       unsubscribeServerChatDelete()
       unsubscribeSessionReload()
       unsubscribeChat()
       unsubscribeJoinSessionToAdmin()
       unsubscribeJoinSessionToGuest()
       unsubscribeServerChatEdit()
+
+      // Cancel throttled and debounced functions
+      throttledTypingHandler.cancel()
+      clearTypingUsers.cancel()
     }
   }, [
-
     subscribe,
     handleServerChatDelete,
     handleServerChatMessages,
@@ -596,7 +756,10 @@ export const MessageWebSocketProvider: React.FC<
     sendChatMessage,
     handleJoinSessionByAdmin,
     handleJoinSessionByGuest,
-    handleServerChatEdit
+    handleServerChatEdit,
+    handleServerTypingUsers,
+    throttledTypingHandler,
+    clearTypingUsers,
   ])
 
   const contextValue = useMemo(
@@ -624,8 +787,13 @@ export const MessageWebSocketProvider: React.FC<
       editingMessageContent,
       setEditingMessageId,
       setEditingMessageContent,
+      typingUsers,
+      setTypingUsers,
+      handleClientTyping,
+      clearTypingUsers,
     }),
     [
+      handleClientTyping,
       sendChatMessage,
       editMessage,
       deleteMessage,
@@ -649,6 +817,9 @@ export const MessageWebSocketProvider: React.FC<
       editingMessageContent,
       setEditingMessageId,
       setEditingMessageContent,
+      typingUsers,
+      setTypingUsers,
+      clearTypingUsers,
     ]
   )
 

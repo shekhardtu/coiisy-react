@@ -49,6 +49,7 @@ interface WebSocketContextType {
   sendAuthMessage: (message: AuthMessageInterface) => void;
   serverAvailable: boolean;
   switchSession: (sessionId: string) => void;
+  connectionId: string | null;
 }
 
 const WebSocketContext = createContext<WebSocketContextType | null>(null);
@@ -75,7 +76,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   const [currentUser, setCurrentUser] = useState<CurrentUserInterface>({} as CurrentUserInterface);
   const [sessionId, setSessionId] = useState<string>(sessionIdParam || "");
   const [serverAvailable, setServerAvailable] = useState(true);
-
+  const [connectionId, setConnectionId] = useState<string | null>(null);
 
 
   useEffect(() => {
@@ -83,6 +84,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     if (!connectionId) {
       local('json', "appIdentifier").set("connectionId", uuidv4());
     }
+    setConnectionId(connectionId);
   }, [])
 
 
@@ -96,6 +98,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     if (sessionId) {
       const currentUser = getCurrentUser(sessionId);
       if (currentUser) {
+// setting correct user
         setCurrentUser(currentUser);
         // If we have both sessionId and currentUser, try connecting
         if (!wsRef.current && status === 'disconnected') {
@@ -240,6 +243,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     }
 
     const currentUser = getCurrentUser(sessionId);
+    // setting correct user
     setCurrentUser(currentUser);
 
     if (!currentUser) {
@@ -465,7 +469,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     sessionId,
     setSessionId,
     serverAvailable,
-    switchSession
+    switchSession,
+    connectionId
   }), [
     status,
     sendAuthMessage,
@@ -478,7 +483,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     sessionId,
     setSessionId,
     serverAvailable,
-    switchSession
+    switchSession,
+    connectionId
   ]);
 
   return (

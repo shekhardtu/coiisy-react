@@ -145,6 +145,7 @@ const ChatMessage = React.memo(
                   {...chatMessageStateProps}
                   className="transition-all duration-200"
                 />
+
               </div>
             </div>
           </div>
