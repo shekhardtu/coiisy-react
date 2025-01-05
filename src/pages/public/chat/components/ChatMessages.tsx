@@ -1,7 +1,7 @@
 import { useMessageWebSocket } from '@/contexts/MessageWebSocket.context';
 import { useViewport } from '@/hooks/useViewport.hook';
 import { cn } from '@/lib/utils';
-import React, { memo, useCallback, useEffect, useRef } from 'react';
+import React, { memo, useEffect, useRef } from 'react';
 
 import { WS_MESSAGE_TYPES } from '@/lib/webSocket.config';
 import { useParams } from 'react-router-dom';
@@ -24,15 +24,15 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ currentUser, scrollToBottom
 
   const originalScrollPositionRef = useRef<number>(0);
 
-  const scrollToOriginalPosition = useCallback(() => {
-    if (chatContainerRef?.current) {
-      // Directly scroll back to the original position
-      chatContainerRef.current.scrollTo({
-        top: originalScrollPositionRef.current,
-        behavior: 'smooth'
-      });
-    }
-  }, [chatContainerRef]);
+  // const scrollToOriginalPosition = useCallback(() => {
+  //   if (chatContainerRef?.current) {
+  //     // Directly scroll back to the original position
+  //     chatContainerRef.current.scrollTo({
+  //       top: originalScrollPositionRef.current,
+  //       behavior: 'smooth'
+  //     });
+  //   }
+  // }, [chatContainerRef]);
 
   // Store the original position when no one is typing
   useEffect(() => {
@@ -65,10 +65,8 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ currentUser, scrollToBottom
 
     if (typingUsers.length > 0) {
       scrollToBottom(false);
-    } else {
-      scrollToOriginalPosition();
     }
-  }, [currentSessionMessages.length, scrollToBottom, lastMessageAction, typingUsers.length, scrollToOriginalPosition]);
+  }, [currentSessionMessages.length, scrollToBottom, lastMessageAction, typingUsers.length]);
 
 
 
