@@ -1,30 +1,50 @@
 import { useMessageWebSocket } from '@/contexts/MessageWebSocket.context';
 import { useViewport } from '@/hooks/useViewport.hook';
 import { cn } from '@/lib/utils';
-import React, { memo, useEffect, useRef } from 'react';
+import React, { memo, useCallback, useEffect, useRef } from 'react';
 
 import { WS_MESSAGE_TYPES } from '@/lib/webSocket.config';
 import { useParams } from 'react-router-dom';
 import { CurrentUserInterface } from '../../coEditor/components/Editor.types';
 import { useOnlineUsers } from '../../coEditor/hooks/useOnlineUsers';
 import ChatMessage from './ChatMessage';
-
+import ChatMessageTyping from './ChatMessageTyping';
 interface ChatMessagesProps {
   currentUser: CurrentUserInterface;
   scrollToBottom: (force?: boolean) => void;
   chatContainerRef?: React.RefObject<HTMLDivElement>;
 }
 
-const ChatMessages: React.FC<ChatMessagesProps> = ({ currentUser, scrollToBottom }) => {
+const ChatMessages: React.FC<ChatMessagesProps> = ({ currentUser, scrollToBottom, chatContainerRef }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { keyboardVisible, isKeyboardSupported } = useViewport();
-  const { messagesBySession, lastMessageAction } = useMessageWebSocket();
+  const { messagesBySession, lastMessageAction, typingUsers } = useMessageWebSocket();
   const { sessionId } = useParams();
   const { activeUsers } = useOnlineUsers();
+
+  const originalScrollPositionRef = useRef<number>(0);
+
+  const scrollToOriginalPosition = useCallback(() => {
+    if (chatContainerRef?.current) {
+      // Directly scroll back to the original position
+      chatContainerRef.current.scrollTo({
+        top: originalScrollPositionRef.current,
+        behavior: 'smooth'
+      });
+    }
+  }, [chatContainerRef]);
+
+  // Store the original position when no one is typing
+  useEffect(() => {
+    if (typingUsers.length === 0 && chatContainerRef?.current) {
+      originalScrollPositionRef.current = chatContainerRef.current.scrollTop;
+    }
+  }, [typingUsers.length, chatContainerRef]);
 
   // Get messages for current session
 
   const currentSessionMessages = messagesBySession.get(sessionId!) || [];
+
 
 
   useEffect(() => {
@@ -42,7 +62,15 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ currentUser, scrollToBottom
           break;
       }
     }
-  }, [currentSessionMessages.length, scrollToBottom, lastMessageAction]);
+
+    if (typingUsers.length > 0) {
+      scrollToBottom(false);
+    } else {
+      scrollToOriginalPosition();
+    }
+  }, [currentSessionMessages.length, scrollToBottom, lastMessageAction, typingUsers.length, scrollToOriginalPosition]);
+
+
 
   return (
     <div className={cn("space-y-3 sm:space-y-4 p-4 w-full",
@@ -58,6 +86,12 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ currentUser, scrollToBottom
           activeUsers={activeUsers}
         />
       ))}
+        {typingUsers.length > 0 && (
+          <ChatMessageTyping
+            isTyping={typingUsers.length > 0}
+            typingUsers={typingUsers}
+          />
+        )}
       <div ref={messagesEndRef} />
     </div>
   );

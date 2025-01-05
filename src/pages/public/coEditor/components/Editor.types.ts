@@ -18,7 +18,27 @@ export type MessageStatesObject = {
   createdAt: string,
   updatedAt: string
 }
+export type ClientTypingUserInterface = {
+  type: typeof WS_MESSAGE_TYPES.CLIENT_CHAT_USER_TYPING;
+  userId: string;
+  fullName: string;
+  sessionId?: string;
+  connectionId?: string;
+}
 
+export type ServerTypingUserInterface = {
+  type: typeof WS_MESSAGE_TYPES.SERVER_CHAT_USER_TYPING;
+  userId: string;
+  fullName: string;
+  sessionId?: string;
+  connectionId?: string;
+  initials?: string;
+  isShow?: boolean;
+  isTyping?: boolean;
+  isOnline?: boolean;
+  connectedAt?: number | string | Date;
+  lastSeenAt?: number | string | Date;
+}
 export interface OnlineUserInterface {
   userId: string;
   initials: string;
@@ -30,6 +50,8 @@ export interface OnlineUserInterface {
   isShow?: boolean;
   sessionId?: string;
 }
+
+
 
 export interface CurrentUserInterface {
   userId?: string;
@@ -321,7 +343,8 @@ export type ServerMessage =
   | ServerChatReactionRemoveInterface
   | ServerUserRequestToJoinSessionInterface
   | ServerUserRequestToJoinSessionToAdminInterface
-  | ServerUserRequestToJoinSessionToGuestInterface;
+  | ServerUserRequestToJoinSessionToGuestInterface
+  | ServerTypingUserInterface;
 
 
 export type ClientMessage =
@@ -339,7 +362,8 @@ export type ClientMessage =
   | ClientSessionAcceptedToJoinInterface
   | ClientSessionRejectedToJoinInterface
   | ClientUserRequestToJoinSessionInterface
-  | ClientUserHandleAutoJoinInterface;
+  | ClientUserHandleAutoJoinInterface
+  | ClientTypingUserInterface;
 
 
 export type SessionHandlerActionInterface = "acceptedToJoin" | "rejectedToJoin" | "requestToJoin" | "leaveSession";

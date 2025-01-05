@@ -4,7 +4,9 @@ import {
   WS_MESSAGE_TYPES
 } from "@/lib/webSocket.config";
 import { SessionStatusInterface } from "@/pages/public/chat/components/chat.types";
-import { ChatMessageInterface, ClientSessionAcceptedToJoinInterface, ClientSessionRejectedToJoinInterface, MessageState, ServerSessionMessagesInterface, ServerUserRequestToJoinSessionToAdminInterface, SessionHandlerActionInterface } from "@/pages/public/coEditor/components/Editor.types";
+import { ChatMessageInterface, ClientSessionAcceptedToJoinInterface, ClientSessionRejectedToJoinInterface, ClientTypingUserInterface, MessageState, OnlineUserInterface, ServerSessionMessagesInterface, ServerTypingUserInterface, ServerUserRequestToJoinSessionToAdminInterface, SessionHandlerActionInterface } from "@/pages/public/coEditor/components/Editor.types";
+import debounce from 'lodash/debounce';
+import throttle from 'lodash/throttle';
 import React, {
   createContext,
   useCallback,
@@ -42,6 +44,9 @@ interface MessageWebSocketContextType {
   markMessageAsEditing: (messageId: string | null) => void;
   editingMessageId: string | null;
   editingMessageContent: string | null;
+  typingUsers: ServerTypingUserInterface[];
+  setTypingUsers: React.Dispatch<React.SetStateAction<ServerTypingUserInterface[]>>;
+  handleClientTyping: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
 }
 
 const MessageWebSocketContext =
@@ -56,19 +61,53 @@ export const MessageWebSocketProvider: React.FC<
   > = ({ children }) => {
 
   const { sessionId } = useParams()
-  const { sendMessage: wsSendMessage, currentUser,  subscribe } = useWebSocket()
+  const { sendMessage: wsSendMessage, currentUser,  subscribe, connectionId } = useWebSocket()
   const [messages, setMessages] = useState<ChatMessageInterface[]>([])
-  const lastMessageAction = useRef<string | null>(null);
+    const lastMessageAction = useRef<string | null>(null);
+
 
   const [sessionStatus, setSessionStatus] = useState<SessionStatusInterface['sessionStatus']>("joined")
   const [userGuestRequestToJoinSession, setUserGuestRequestToJoinSession] = useState<ServerUserRequestToJoinSessionToAdminInterface | undefined>(undefined);
 
   // const [userRequestToJoinSessionQueue, setUserRequestToJoinSessionQueue] = useState<ClientUserRequestToJoinSessionInterface[]>([])
 
-  const [messagesBySession, setMessagesBySession] = useState<Map<string, ChatMessageInterface[]>>(new Map());
+    const [messagesBySession, setMessagesBySession] = useState<Map<string, ChatMessageInterface[]>>(new Map());
+
+    const throttleAndDebounceDuration = 3000;
 
     const { soundEnabled } = useNotification();
     NotificationSound.init()
+
+  // Create a throttled function
+  const throttledTypingHandler = throttle(() => {
+
+
+    const {userIdentifier: currentUser} = local("json", sessionId).get(`sessionIdentifier`) as {userIdentifier: OnlineUserInterface};
+
+    const clientTypingUser: ClientTypingUserInterface = {
+      type: WS_MESSAGE_TYPES.CLIENT_CHAT_USER_TYPING,
+      userId: currentUser.userId,
+      fullName: currentUser.fullName,
+      sessionId: sessionId!,
+      connectionId: connectionId!,
+    }
+    wsSendMessage(clientTypingUser)
+  }, throttleAndDebounceDuration);
+
+
+
+    const handleClientTyping = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    if(e.target.value.length > 0) {
+      throttledTypingHandler();
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      throttledTypingHandler.cancel();
+      throttledTypingHandler.flush();
+    }
+  }, []);
 
   const sendChatMessage = useCallback(
     (content: string) => {
@@ -157,8 +196,9 @@ export const MessageWebSocketProvider: React.FC<
   const handleServerChatMessages = useCallback((message: ChatMessageInterface) => {
     lastMessageAction.current = WS_MESSAGE_TYPES.SERVER_CHAT;
 
-    handleNewMessage(message);
+    if(message.sessionId !== sessionId) return;
 
+    handleNewMessage(message);
 
     setMessagesBySession((prev: Map<string, ChatMessageInterface[]>) => {
       const newMap = new Map(prev);
@@ -187,6 +227,10 @@ export const MessageWebSocketProvider: React.FC<
         },
       });
     }
+    // remove user from typing users if they sent the typed message
+    setTypingUsers((prev) => [
+      ...prev.filter(user => user.userId !== message.userId),
+    ]);
   }, [currentUser, sessionId, messagesBySession, handleNewMessage]);
 
   const deduplicateMessages = useCallback((messages: ChatMessageInterface[]): ChatMessageInterface[] => {
@@ -203,6 +247,7 @@ export const MessageWebSocketProvider: React.FC<
 
     const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
     const [editingMessageContent, setEditingMessageContent] = useState<string | null>(null);
+    const [typingUsers, setTypingUsers] = useState<ServerTypingUserInterface[]>([]);
 
     const markMessageAsEditing = useCallback((messageId: string | null) => {
       setEditingMessageId(messageId);
@@ -221,7 +266,6 @@ export const MessageWebSocketProvider: React.FC<
   const editMessage = useCallback(
     (messageId: string, newContent: string) => {
       if (!currentUser?.userId || !sessionId) return;
-      console.log("editMessage", messageId, newContent);
 
       // Send the edit message to the server
       wsSendMessage({
@@ -514,6 +558,9 @@ export const MessageWebSocketProvider: React.FC<
   }, [])
 
 
+
+
+
   const handleServerChatEdit = useCallback((message: ChatMessageInterface) => {
     lastMessageAction.current = WS_MESSAGE_TYPES.SERVER_CHAT_EDIT;
 
@@ -542,8 +589,32 @@ export const MessageWebSocketProvider: React.FC<
   }, [setMessages, setMessagesBySession, sessionId]);
 
 
+    // Define clearTypingUsers outside of any component or hook
+        const clearTypingUsers = debounce(() => {
 
-  useEffect(() => {
+          setTypingUsers([]);
+        }, throttleAndDebounceDuration);
+
+
+    const handleServerTypingUsers = useCallback((message: ServerTypingUserInterface) => {
+      if (message.sessionId !== sessionId) return;
+      setTypingUsers((prev) => [
+        ...prev.filter(user => user.userId !== message.userId),
+        message
+      ]);
+
+      // Call the debounced function
+      clearTypingUsers();
+    }, [sessionId, clearTypingUsers]);
+
+
+
+    useEffect(() => {
+
+      const unsubscribeTypingUsers = subscribe(
+        WS_MESSAGE_TYPES.SERVER_CHAT_USER_TYPING,
+        handleServerTypingUsers
+      )
     const unsubscribeServerChatDelete = subscribe(
       WS_MESSAGE_TYPES.SERVER_CHAT_DELETE,
       handleServerChatDelete
@@ -575,7 +646,8 @@ export const MessageWebSocketProvider: React.FC<
       handleJoinSessionByGuest
     )
 
-    return () => {
+      return () => {
+        unsubscribeTypingUsers()
       unsubscribeServerChatDelete()
       unsubscribeSessionReload()
       unsubscribeChat()
@@ -596,7 +668,8 @@ export const MessageWebSocketProvider: React.FC<
     sendChatMessage,
     handleJoinSessionByAdmin,
     handleJoinSessionByGuest,
-    handleServerChatEdit
+    handleServerChatEdit,
+    handleServerTypingUsers
   ])
 
   const contextValue = useMemo(
@@ -624,8 +697,13 @@ export const MessageWebSocketProvider: React.FC<
       editingMessageContent,
       setEditingMessageId,
       setEditingMessageContent,
+      typingUsers,
+      setTypingUsers,
+      handleClientTyping,
+      clearTypingUsers
     }),
     [
+      handleClientTyping,
       sendChatMessage,
       editMessage,
       deleteMessage,
@@ -649,6 +727,10 @@ export const MessageWebSocketProvider: React.FC<
       editingMessageContent,
       setEditingMessageId,
       setEditingMessageContent,
+      typingUsers,
+      setTypingUsers,
+      clearTypingUsers
+
     ]
   )
 
