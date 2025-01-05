@@ -11,12 +11,14 @@ interface ChatInputProps {
   sessionStatus: SessionStatusInterface["sessionStatus"]
   scrollToBottom?: () => void
   tryConnect: () => void
+  chatInputRef: React.RefObject<HTMLDivElement>
 }
 const ChatInput: React.FC<ChatInputProps> = ({
   status,
   sessionStatus,
   scrollToBottom,
   tryConnect,
+  chatInputRef,
 }) => {
   const {
     sendChatMessage,
@@ -26,7 +28,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
     markMessageAsEditing,
   } = useMessageWebSocket();
 
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const [inputValue, setInputValue] = useState("");
 
   // Update input value when editingMessageContent changes
@@ -56,15 +58,16 @@ const ChatInput: React.FC<ChatInputProps> = ({
     setInputValue(""); // Clear input after sending
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key !== "Enter") return;
-    e.preventDefault();
-    handleSendMessage();
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement | HTMLInputElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
   };
   const { keyboardVisible, isKeyboardSupported } = useViewport()
 
   return (
-    <div className="relative">
+    <div className="relative w-full">
       <ChatInputInfoBar
         tryConnect={tryConnect}
         status={status}
@@ -86,11 +89,12 @@ const ChatInput: React.FC<ChatInputProps> = ({
             e.preventDefault();
             handleSendMessage();
           }}
-          className="flex items-center gap-2 max-w-full"
+          className="flex items-center gap-2 w-full
+           flex-1 "
         >
-          <div className="relative flex-1">
-            <input
-              type="text"
+          <div className="flex relative flex-1 w-full
+          ">
+            <textarea
               ref={inputRef}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
@@ -104,9 +108,22 @@ const ChatInput: React.FC<ChatInputProps> = ({
               }
               aria-label="Chat message"
               className={cn(
-                "w-full px-4 py-2.5 text-base rounded-full focus:outline-none focus:ring-2 disabled:opacity-50 placeholder:text-muted-foreground/70",
+                "w-full px-4 py-2.5 text-base rounded-sm focus:outline-none focus:ring-2 disabled:opacity-50 placeholder:text-muted-foreground/70",
                 editingMessageId ? "bg-yellow-100 border-yellow-500" : "bg-input text-foreground"
               )}
+              rows={1}
+              style={{ resize: "none", overflow: "hidden" }}
+              onInput={(e) => {
+                const target = e.target as HTMLTextAreaElement;
+                target.style.height = "auto";
+                const newHeight = Math.min(target.scrollHeight, 2 * parseFloat(getComputedStyle(target).lineHeight));
+                target.style.height = `${newHeight}px`;
+                if (chatInputRef.current) {
+
+
+                 // Do something to keep the input from growing
+                }
+              }}
             />
             {status === "connected" && (
               <span

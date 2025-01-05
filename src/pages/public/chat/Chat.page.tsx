@@ -152,6 +152,8 @@ const ChatPage: React.FC = () => {
     activeUsers,
   }), [status, tryConnect, activeUsers]);
 
+  const chatInputRef = useRef<HTMLDivElement>(null);
+
 
 
   return (
@@ -160,7 +162,7 @@ const ChatPage: React.FC = () => {
 
       <div
         ref={chatContainerRef}
-        className={`messages overflow-y-scroll`}
+        className="messages overflow-y-scroll"
         role="log"
         aria-live="polite"
       >
@@ -171,12 +173,13 @@ const ChatPage: React.FC = () => {
         />
       </div>
 
-      <div className="compose" role="form" aria-label="Message composition">
+      <div className="compose" role="form" aria-label="Message composition" ref={chatInputRef}>
         <ChatInput
           sessionStatus={sessionStatus}
           status={status}
           scrollToBottom={scrollToBottom}
           tryConnect={tryConnect}
+          chatInputRef={chatInputRef}
         />
       </div>
     </div>
