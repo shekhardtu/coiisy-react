@@ -118,7 +118,7 @@ const ChatMessage = React.memo(
                   e.preventDefault()
                   setIsOpen(!isOpen)
                 }}
-                className={`max-w-xs w-auto px-4 py-2 rounded-2xl ${
+                className={`max-w-xs w-auto px-4 py-2 rounded-2xl break-words ${
                   Array.isArray(message?.state) && message.state.find((state) => state?.state === "deleted")
                     ? "bg-gray-50 text-gray-400 text-sm italic px-2 py-1"
                     : isOwnMessage

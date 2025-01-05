@@ -119,7 +119,11 @@ const ChatInput: React.FC<ChatInputProps> = ({
           </div>
           <button
             type="button"
-            onClick={handleSendMessage}
+            onClick={(e) => {
+              e.preventDefault();
+              handleSendMessage();
+              inputRef.current?.focus();
+            }}
             disabled={status !== "connected"}
             aria-label="Send message"
             className="min-w-[44px] min-h-[44px] p-3 bg-primary text-primary-foreground rounded-full
